@@ -77,5 +77,9 @@ src/
 [MIT](./LICENSE). This is a theme-designing tool built for Cherry Studio. Cherry Studio is a trademark of its respective owner; this project is not affiliated with or endorsed by it.
 
 本项目采用 [MIT](./LICENSE) 许可。Cherry Studio 是其所有者的商标，本项目与其无隶属或背书关系。
+<<<<<<< HEAD
 # CherryStudio-ThemeMaker
+# CherryStudio-ThemeMaker
+=======
+>>>>>>> parent of f4f46b6 (first commit)
 # CherryStudio-ThemeMaker
