@@ -78,3 +78,4 @@ src/
 
 本项目采用 [MIT](./LICENSE) 许可。Cherry Studio 是其所有者的商标，本项目与其无隶属或背书关系。
 # CherryStudio-ThemeMaker
+# CherryStudio-ThemeMaker
