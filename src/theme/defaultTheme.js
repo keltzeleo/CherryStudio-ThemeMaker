@@ -65,8 +65,8 @@ export const baseDefaultTheme = {
   // ── Alpha values (per-mode) ──────────────────────────────────────────
   sidebarOpacity: 1,
   workspaceOpacity: 0,
-  inputOpacity: 1,
-  inputBorderOpacity: 0.25,
+  inputOpacityDark: 1, inputOpacityLight: 1,
+  inputBorderOpacityDark: 0.1, inputBorderOpacityLight: 0.08,
   globalBorderOpacity: 0.098,
   globalBorderMuteOpacity: 0.05,
   tableHoverBgOpacity: 0.05,
@@ -118,8 +118,8 @@ const ALPHA_DEFAULTS = {
   globalBorderMuteOpacity: 0.05,
   sidebarOpacity: 1,
   workspaceOpacity: 0,
-  inputOpacity: 1,
-  inputBorderOpacity: 0.25,
+  inputOpacityDark: 1, inputOpacityLight: 1,
+  inputBorderOpacityDark: 0.1, inputBorderOpacityLight: 0.08,
   tableHoverBgOpacity: 0.05,
 };
 

@@ -275,8 +275,8 @@ ${theme.enableBouncyHover ? `.message-content-container:hover { transform: trans
 .markdown .table-toolbar [role='button']:hover, .markdown .table-toolbar button:hover { background-color: var(--theme-hover-item-bg) !important; color: var(--color-primary) !important; }
 
 .markdown table { border: 1px solid var(--local-table-border) !important; border-radius: ${tableRadius}px !important; }
-.markdown table th { background-color: var(--local-table-header-bg) !important; border-bottom: 1px solid var(--local-table-border) !important; }
-.markdown table td { border-bottom: 1px solid var(--local-table-border) !important; transition: background-color 0.2s ease; }
+.markdown table th { background-color: var(--local-table-header-bg) !important; border-bottom: 1px solid var(--local-table-border) !important; color: var(--local-table-header-text) !important; }
+.markdown table td { color: var(--color-text-2) !important; border-bottom: 1px solid var(--local-table-border) !important; transition: background-color 0.2s ease; }
 .markdown table tr:hover td { background-color: var(--local-table-hover-bg) !important; }
 
 .markdown strong { color: inherit !important; }

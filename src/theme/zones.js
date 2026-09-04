@@ -87,8 +87,8 @@ export const ZONES = {
               ]},
   inputbar: { sel:'.inputbar',              note:'输入栏 · input bar',    parts:[
                 {label:'输入栏底',kind:'bg',v:'--color-background'},
-                {label:'输入框底',kind:'bg',v:'--color-background-soft'},
-              ], more:[{label:'输入框边框',kind:'bg',v:'--color-border'}]},
+                {label:'输入框底',kind:'bg',v:'--local-input-bg'},
+              ], more:[{label:'输入框边框',kind:'bg',v:'--local-input-border'}]},
   quote:    { sel:'.quote',                  note:'引用块',               parts:[
                 {label:'引用边线',kind:'bg',v:'--color-reference',grp:'引用块'},
                 {label:'引用底色',kind:'bg',v:'--color-reference-background',grp:'引用块'},
