@@ -2,7 +2,8 @@
 
 # Theme Station · V72
 
-**A preview-first theme designer for [Cherry Studio](https://cherry-ai.com).**
+<img width="1472" height="925" alt="image" src="https://github.com/user-attachments/assets/6b79c98c-3bd8-4525-b961-3d89a78785b8" />
+
 
 Click directly on a live interface preview to recolor every element.
 What you see is **exactly** what gets exported as Cherry Studio CSS.
