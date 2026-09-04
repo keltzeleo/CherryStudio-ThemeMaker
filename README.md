@@ -11,13 +11,13 @@ A **preview-first** theme editor for [Cherry Studio](https://cherry-ai.com).
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff.svg)](https://vite.dev)
-[![Tests](https://img.shields.io/badge/tests-43%2F43%20passing-brightgreen.svg)](#development)
+[![Tests](https://img.shields.io/badge/tests-43%2F43%20passing-brightgreen.svg)](#-development)
 
 </div>
 
 ---
 
-## Why this exists
+## 💡 Why this exists
 
 Most theme editors are a form: sliders and hex inputs on one side, a small preview on the other, and an export step that hopes the two stayed in sync. They drift — the preview shows one thing, the exported CSS ships another.
 
@@ -25,29 +25,46 @@ Theme Station skips the form. **The editor *is* the real Cherry Studio interface
 
 ---
 
-## How it works
+## 🚶 How it works
 
 1. **Pick a starting point.** Choose a built-in preset from the dock, or start from the current theme.
-2. **Click anything to recolor it.** Every element in the preview — bubbles, sidebar, tables, code blocks, links — opens a floating picker on click. Drag the single accent ball and thinking-box text, active states, and glows all follow automatically; structural surfaces are desaturated toward a Morandi palette so they stay soft instead of turning into saturated accent clones.
+2. **Click anything to recolor it.** Every element in the preview — bubbles, sidebar, tables, code blocks, links — opens a floating picker on click. Drag the single accent ball and everything derived from it follows automatically (see [Color logic](#-color-logic) below).
 3. **Work in both modes at once.** Dark and light are synced by default — edit one, the other converts and follows. Turn sync off per-edit if you want the two modes to diverge.
 4. **Save or fork.** Editing a saved preset writes back in place. Forking copies it into a new floating draft (named `<name> v2`) without touching the original, until you decide to keep it.
 5. **Export.** Hover a preset and hit **Copy CSS** — the full, layered Cherry Studio stylesheet goes straight to your clipboard, ready to paste into Cherry Studio's custom CSS.
 
 ---
 
-## Features
+## 🎨 Color logic
 
-- **Click-to-edit, on the real UI** — every surface in the preview (bubbles, sidebar, tables, code blocks, links) opens its own color picker on click. No sidebar of abstract labels to map back to the interface in your head.
-- **Accent-first derivation** — one accent ball drives the primary color; active states, glows, and thinking-box text follow automatically. Structural surfaces (thinking box, table header, reference, code-name backgrounds) desaturate toward a Morandi palette instead of turning into saturated accent clones.
-- **Dark ⇄ light sync** — edit one mode and the other converts and follows, on by default, with a per-edit override when you want the two to diverge on purpose.
-- **Undo / redo** — full history via `⌘Z` / `⌘⇧Z`.
-- **Non-destructive drafts** — edit a saved preset in place, or fork it into a new floating draft (`<name> v2`) that leaves the original untouched until you decide to keep it.
-- **Keyboard accessible** — presets are Tab-focusable and selectable with `Space`/`Enter`; no mouse required.
-- **Real Cherry Studio export** — copies the actual layered stylesheet (`body[theme-mode="dark"/"light"]`, Layer 1 official tokens + Layer 2 structural variables, penetrations), not preview-only variable names.
+One accent doesn't make a whole interface — it makes one dot on a color wheel. Theme Station turns that single dot into four structural surfaces by rotating around the wheel from the accent's hue, mixing several classic color-harmony relationships in one pass instead of committing to just one:
+
+| Surface | Angle from accent | Relationship |
+| --- | --- | --- |
+| Table header | +60° | Analogous |
+| Blockquote | +120° | Triadic |
+| Thinking box | +180° | Complementary |
+| Code parameter | +240° | Tetradic |
+
+Every one of those four hues is then clamped into the same low-saturation "Morandi" band before it's used, so they still read as one coordinated, muted family rather than four independently-hued accents shouting over each other. The sidebar's 5-color glow, by contrast, is hand-tuned per preset rather than derived — it's decorative, not structural.
+
+Both the preview and the exported CSS call the exact same function (`harmonySurface` in [`src/utils/colors.js`](./src/utils/colors.js)) for this, which is what makes the two impossible to drift apart.
 
 ---
 
-## Getting started
+## ✨ Features
+
+- 🖱️ **Click-to-edit, on the real UI** — every surface in the preview (bubbles, sidebar, tables, code blocks, links) opens its own color picker on click. No sidebar of abstract labels to map back to the interface in your head.
+- 🎯 **Accent-first derivation** — one accent ball drives the primary color and four structural surfaces via hue-wheel rotation (see [Color logic](#-color-logic)), instead of you hand-picking every shade.
+- 🌓 **Dark ⇄ light sync** — edit one mode and the other converts and follows, on by default, with a per-edit override when you want the two to diverge on purpose.
+- ↩️ **Undo / redo** — full history via `⌘Z` / `⌘⇧Z`.
+- 📝 **Non-destructive drafts** — edit a saved preset in place, or fork it into a new floating draft (`<name> v2`) that leaves the original untouched until you decide to keep it.
+- ⌨️ **Keyboard accessible** — presets are Tab-focusable and selectable with `Space`/`Enter`; no mouse required.
+- 📤 **Real Cherry Studio export** — copies the actual layered stylesheet (`body[theme-mode="dark"/"light"]`, Layer 1 official tokens + Layer 2 structural variables, penetrations), not preview-only variable names.
+
+---
+
+## 🚀 Getting started
 
 ```bash
 # 1. Install dependencies
@@ -61,22 +78,39 @@ npm run dev
 
 ---
 
-## Built-in presets
+## 🎨 Presets
+
+**13 presets ship in the dock** — 6 built-in, plus 7 of the author's own, each with independently tuned dark and light variants.
+
+### Built-in
 
 | Preset | Accent |
 | --- | --- |
-| `Kel Meow` | `#E89975` |
-| `Ceramic` | `#D98E63` |
-| `Morandi` | `#A88B6B` |
-| `Paper` | `#C97B4A` |
-| `Moss` | `#8db578` |
-| `Ocean` | `#6fb5d4` |
+| 🐾 `Kel Meow` | `#E89975` |
+| 🏺 `Ceramic` | `#D98E63` |
+| 🪨 `Morandi` | `#A88B6B` |
+| 📄 `Paper` | `#C97B4A` |
+| 🌿 `Moss` | `#8db578` |
+| 🌊 `Ocean` | `#6fb5d4` |
 
-Each ships with independently tuned dark and light variants. The dock also carries a handful of the author's personal presets — fork any of them, or start from scratch, the same way.
+<details>
+<summary>Personal presets (7) — fork any of them the same way</summary>
+
+| Preset | Accent |
+| --- | --- |
+| `kelMeow` | `#cca83e` |
+| `kelMorandi` | `#3e72cc` |
+| `keltzeleo` | `#5acc3e` |
+| `meoink` | `#cc3e72` |
+| `meowMorandi` | `#893ecc` |
+| `taiyangTze` | `#cc633e` |
+| `tzeDimensions` | `#3eccad` |
+
+</details>
 
 ---
 
-## Development
+## 🧱 Development
 
 <details>
 <summary><strong>Scripts</strong></summary>
@@ -132,7 +166,7 @@ Both the live preview and the exporter read through `resolver.js` — nothing do
 
 ---
 
-## License
+## 📜 License
 
 [MIT](./LICENSE) © 2026 Theme Station contributors.
 
