@@ -23,7 +23,8 @@ What you see is **exactly** what gets exported as Cherry Studio CSS.
 ## 🖼️ Preview · 预览
 
 <p align="center">
-  <img src="theme-station-preview.png" alt="Theme Station V72 preview" width="100%" />
+<img width="1472" height="928" alt="image" src="https://github.com/user-attachments/assets/f5e8c0df-4f44-4822-ae51-663762b448aa" />
+
 </p>
 
 ---
