@@ -1,77 +1,53 @@
 <div align="center">
 
-# Theme Station · V72
+**English** · [简体中文](./README.zh-CN.md)
 
-<img width="1472" height="925" alt="image" src="https://github.com/user-attachments/assets/6b79c98c-3bd8-4525-b961-3d89a78785b8" />
+# Theme Station
 
+A **preview-first** theme editor for [Cherry Studio](https://cherry-ai.com).
 
-Click directly on a live interface preview to recolor every element.
-What you see is **exactly** what gets exported as Cherry Studio CSS.
-
-一个面向 [Cherry Studio](https://cherry-ai.com) 的「预览优先」主题编辑器——
-在实时界面预览上直接点击调色，所见即所得，导出的就是真正的 Cherry Studio CSS。
+<img width="1472" height="925" alt="Theme Station preview" src="https://github.com/user-attachments/assets/6b79c98c-3bd8-4525-b961-3d89a78785b8" />
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff.svg)](https://vite.dev)
-[![Tests](https://img.shields.io/badge/tests-43%2F43%20passing-brightgreen.svg)](#-tests--测试)
+[![Tests](https://img.shields.io/badge/tests-43%2F43%20passing-brightgreen.svg)](#development)
 
 </div>
 
 ---
 
-## 🖼️ Preview · 预览
+## Why this exists
 
-<p align="center">
-<img width="1472" height="928" alt="image" src="https://github.com/user-attachments/assets/f5e8c0df-4f44-4822-ae51-663762b448aa" />
+Most theme editors are a form: sliders and hex inputs on one side, a small preview on the other, and an export step that hopes the two stayed in sync. They drift — the preview shows one thing, the exported CSS ships another.
 
-</p>
-
----
-
-## ✨ Features · 功能
-
-| Feature · 功能 | Description · 说明 |
-| --- | --- |
-| 🎯 **Preview-first** · 预览优先 | The whole window *is* a real Cherry Studio interface. Click any element — chat bubble, code block, table, sidebar, topic list, input bar — to open a floating color editor for it. |
-| 🌓 **Dark ⇄ Light sync** · 明暗双模式 + 统一修改 | Switch modes instantly. Editing a color in one mode auto-converts and syncs to the other (on by default, per-element override available). |
-| 🎨 **Accent-first** · 主色优先 | One accent ball drives the primary color; derived colors (thinking-box text, active states, glows) follow automatically. Structure faces (thinking box / table header / reference / code-name) are derived through a **Morandi-style desaturation** so they stay soft instead of turning into saturated accent clones. |
-| ↩️ **Undo / Redo** · 撤销 / 重做 | Full history with `⌘Z` / `⌘⇧Z`. |
-| 📝 **Floating drafts** · 草稿浮动卡 | Edit a saved preset *in place*, or fork a new theme (auto-named `<name> v2`). Drafts float outside the dock at +10% size to signal "not yet saved". |
-| 🧊 **Frosted draggable dock** · 毛玻璃可拖拽 dock | The preset strip is a frosted-glass panel with a drag grip. |
-| ♿ **Keyboard accessible** · 键盘无障碍 | Tab-focusable presets with `Space`/`Enter` to select, plus `⌘Z`/`⌘⇧Z` undo/redo — no mouse required. |
-| 📤 **Real Cherry Studio export** · 真实导出 | Exports the layered V72 format — `body[theme-mode="dark"/"light"]`, Layer 1 official + Layer 2 structural variables, penetrations — not preview-only names. |
+Theme Station skips the form. **The editor *is* the real Cherry Studio interface.** You click a chat bubble, a code block, a table header, directly in the live UI, and a color picker opens for exactly that surface. The CSS you export is generated from the same resolved state you were just looking at — not a parallel reconstruction of it. What you see is what you get, by construction, not by discipline.
 
 ---
 
-## 🎨 Presets · 预设
+## How it works
 
-### Built-in · 内置预设
-
-| Preset | Accent · 主色 |
-| --- | --- |
-| `Kel Meow` | `#E89975` |
-| `Ceramic` | `#D98E63` |
-| `Morandi` | `#A88B6B` |
-| `Paper` | `#C97B4A` |
-| `Moss` | `#8db578` |
-| `Ocean` | `#6fb5d4` |
-
-### Custom · 自建预设
-
-| Preset | Accent · 主色 |
-| --- | --- |
-| `kelMeow` | `#cca83e` |
-| `kelMorandi` | `#3e72cc` |
-| `keltzeleo` | `#5acc3e` |
-| `meoink` | `#cc3e72` |
-| `meowMorandi` | `#893ecc` |
-| `taiyangTze` | `#cc633e` |
-| `tzeDimensions` | `#3eccad` |
+1. **Pick a starting point.** Choose a built-in preset from the dock, or start from the current theme.
+2. **Click anything to recolor it.** Every element in the preview — bubbles, sidebar, tables, code blocks, links — opens a floating picker on click. Drag the single accent ball and thinking-box text, active states, and glows all follow automatically; structural surfaces are desaturated toward a Morandi palette so they stay soft instead of turning into saturated accent clones.
+3. **Work in both modes at once.** Dark and light are synced by default — edit one, the other converts and follows. Turn sync off per-edit if you want the two modes to diverge.
+4. **Save or fork.** Editing a saved preset writes back in place. Forking copies it into a new floating draft (named `<name> v2`) without touching the original, until you decide to keep it.
+5. **Export.** Hover a preset and hit **Copy CSS** — the full, layered Cherry Studio stylesheet goes straight to your clipboard, ready to paste into Cherry Studio's custom CSS.
 
 ---
 
-## 🚀 Getting started · 快速开始
+## Features
+
+- **Click-to-edit, on the real UI** — every surface in the preview (bubbles, sidebar, tables, code blocks, links) opens its own color picker on click. No sidebar of abstract labels to map back to the interface in your head.
+- **Accent-first derivation** — one accent ball drives the primary color; active states, glows, and thinking-box text follow automatically. Structural surfaces (thinking box, table header, reference, code-name backgrounds) desaturate toward a Morandi palette instead of turning into saturated accent clones.
+- **Dark ⇄ light sync** — edit one mode and the other converts and follows, on by default, with a per-edit override when you want the two to diverge on purpose.
+- **Undo / redo** — full history via `⌘Z` / `⌘⇧Z`.
+- **Non-destructive drafts** — edit a saved preset in place, or fork it into a new floating draft (`<name> v2`) that leaves the original untouched until you decide to keep it.
+- **Keyboard accessible** — presets are Tab-focusable and selectable with `Space`/`Enter`; no mouse required.
+- **Real Cherry Studio export** — copies the actual layered stylesheet (`body[theme-mode="dark"/"light"]`, Layer 1 official tokens + Layer 2 structural variables, penetrations), not preview-only variable names.
+
+---
+
+## Getting started
 
 ```bash
 # 1. Install dependencies
@@ -81,36 +57,54 @@ npm install
 npm run dev
 ```
 
-> **Node 20+** is recommended. If you ever see `vite: command not found` after install, run `npm install --include=dev` once — an unusual `NODE_ENV=production` environment can skip dev dependencies.
+> **Node 20+** is recommended. If you see `vite: command not found` after install, run `npm install --include=dev` once — an unusual `NODE_ENV=production` environment can skip dev dependencies.
 
 ---
 
-## 📜 Scripts · 命令
+## Built-in presets
 
-| Command · 命令 | Description · 说明 |
+| Preset | Accent |
 | --- | --- |
-| `npm run dev` | Start dev server · 启动开发服务器 |
-| `npm test` | Export-consistency tests (Node runner) · 导出一致性测试 |
-| `npm run test:ui` | Interaction / alpha tests (Vitest + jsdom) · 交互与 alpha 测试 |
-| `npm run test:all` | Run everything · 运行全部测试 |
-| `npm run build` | Production build to `dist/` · 构建 |
-| `npm run preview` | Preview the production build · 预览构建产物 |
-| `npm run lint` | ESLint · 代码检查 |
+| `Kel Meow` | `#E89975` |
+| `Ceramic` | `#D98E63` |
+| `Morandi` | `#A88B6B` |
+| `Paper` | `#C97B4A` |
+| `Moss` | `#8db578` |
+| `Ocean` | `#6fb5d4` |
+
+Each ships with independently tuned dark and light variants. The dock also carries a handful of the author's personal presets — fork any of them, or start from scratch, the same way.
 
 ---
 
-## ✅ Tests · 测试
+## Development
 
-**43/43 passing** — every edit is regression-checked.
+<details>
+<summary><strong>Scripts</strong></summary>
 
-- `test/export-consistency.test.js` · **32 tests** — locks the invariant that exported CSS values match the preview variables exactly (including the Morandi-style desaturated harmony surfaces for the thinking box / table header / reference / code-name backgrounds).
-- `test/ui/*.test.jsx` · **11 tests** — interaction (click-to-edit, undo/redo, draft fork) and alpha-channel consistency.
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the dev server |
+| `npm test` | Export-consistency tests (Node's built-in runner) |
+| `npm run test:ui` | Interaction / alpha-channel tests (Vitest + jsdom) |
+| `npm run test:all` | Run everything |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Preview the production build |
+| `npm run lint` | ESLint |
 
----
+</details>
 
-## 🧱 Architecture · 架构
+<details>
+<summary><strong>Tests — 43/43 passing</strong></summary>
 
-A single source of truth guarantees **what-you-see == what-you-export**:
+- `test/export-consistency.test.js` (32 tests) — locks the invariant that exported CSS values match the preview variables exactly, including the desaturated harmony surfaces for the thinking box, table header, reference, and code-name backgrounds.
+- `test/ui/*.test.jsx` (11 tests) — interaction (click-to-edit, undo/redo, draft fork) and alpha-channel consistency.
+
+</details>
+
+<details>
+<summary><strong>Architecture</strong></summary>
+
+A single source of truth is what makes "what you see" and "what you export" the same object, not two things kept in sync by hand:
 
 ```
 src/
@@ -130,21 +124,16 @@ src/
 └── main.jsx
 ```
 
----
+Both the live preview and the exporter read through `resolver.js` — nothing downstream reconstructs color state independently, which is what the export-consistency tests exist to guard.
 
-## ⚙️ Tech stack · 技术栈
+</details>
 
-- [React](https://react.dev) 19
-- [Vite](https://vite.dev) 8
-- [Vitest](https://vitest.dev) + jsdom for UI tests
-- Node built-in test runner (`node --test`) for export-consistency
+**Stack:** [React](https://react.dev) 19 · [Vite](https://vite.dev) 8 · [Vitest](https://vitest.dev) + jsdom for UI tests · Node's built-in test runner for export consistency.
 
 ---
 
-## 📄 License · 许可
+## License
 
 [MIT](./LICENSE) © 2026 Theme Station contributors.
 
 This is a theme-designing tool built for Cherry Studio. Cherry Studio is a trademark of its respective owner; this project is not affiliated with or endorsed by it.
-
-本项目采用 [MIT](./LICENSE) 许可。Cherry Studio 是其所有者的商标，本项目与其无隶属或背书关系。
