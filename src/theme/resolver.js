@@ -34,19 +34,25 @@ const alphaFor = (theme, token, mode) => {
   return theme[key] ?? 1;
 };
 
+/** Per-mode border opacity, falling back to the shared value for legacy themes. */
+const borderOpacityFor = (theme, mode) => {
+  const sfx = stateSuffix(mode);
+  return theme[`globalBorderOpacity${sfx}`] ?? theme.globalBorderOpacity ?? 0.098;
+};
+
 const FNS = {
   /** --color-group-background: official dark = background-soft, light = white */
   groupBackground: (theme, mode) => (mode === 'light' ? '#ffffff' : 'var(--color-background-soft)'),
-  /** --color-border-soft: border at (borderOpacity − 0.05) */
+  /** --color-border-soft: border at (borderOpacity × 0.64), per-mode */
   borderSoft: (theme, mode) => {
     const border = theme[`globalBorder${stateSuffix(mode)}`] ?? theme.globalBorder ?? '#ffffff';
-    const op = Math.max(0, (theme.globalBorderOpacity ?? 0.098) * 0.64);
+    const op = Math.max(0, borderOpacityFor(theme, mode) * 0.64);
     return hexWithAlpha(border, op);
   },
-  /** --color-border-mute: border at (borderOpacity − 0.10) */
+  /** --color-border-mute: border at (borderOpacity × 0.2), per-mode */
   borderMute: (theme, mode) => {
     const border = theme[`globalBorder${stateSuffix(mode)}`] ?? theme.globalBorder ?? '#ffffff';
-    const op = Math.max(0, (theme.globalBorderOpacity ?? 0.098) * 0.2);
+    const op = Math.max(0, borderOpacityFor(theme, mode) * 0.2);
     return hexWithAlpha(border, op);
   },
 };

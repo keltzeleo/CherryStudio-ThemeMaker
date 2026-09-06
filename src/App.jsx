@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { PRESETS, DEFAULT_GLOW } from './theme/presets.js'
 import { ZONES, VAR_LINKS } from './theme/zones.js'
 import { VAR_KEYS, varsToPlan, presetPlan, buildVars, buildPresetCss } from './theme/themeModel.js'
-import { hexA, toHex, linkHoverOf, convertColor, varKind } from './utils/colors.js'
+import { hexA, toHex, linkHoverOf, convertColor, varKind, thinkingOf } from './utils/colors.js'
 import { parseColor, roundAlpha } from './utils/colorUtils.js'
 
 // 解析一个色值，得到纯 hex 与透明度；跟随 var(--x) 引用到真实颜色，
@@ -69,7 +69,7 @@ function ColorRow({ part, value, onChange, onCommit }) {
   const hasAlpha = alpha < 1
   return (
     <div className="prow" key={part.v}>
-      <span className="chip" style={{ backgroundColor: resolved }} />
+      <span className="chip" style={{ '--c': resolved }} />
       <span className="lb">{part.label}</span>
       <span className="val">{value}</span>
       <input type="color" value={hex} title={part.label}
@@ -115,6 +115,10 @@ function App() {
   const [tableHl, setTableHl] = useState(false)
   const [sync, setSync] = useState(true)
   const [inPlace, setInPlace] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const [pageStr, setPageStr] = useState('1')
   const [, setTick] = useState(0)
 
   const currentVars = useRef({})
@@ -139,6 +143,7 @@ function App() {
   const stripRef = useRef(null)
   const dragRef = useRef(null)
   const popoverRef = useRef(null)
+  const drawerLeaveTimer = useRef(null)
   const leaveNameInputRef = useRef(null)
   const accentInputRef = useRef(null)
 
@@ -174,10 +179,12 @@ function App() {
     tgt[cssVarName] = convertColor(newValue, kind, other)
     if (kind === 'accent') {
       const newAccent = convertColor(newValue, kind, other)
-      tgt['--local-thinking-text'] = newAccent
+      tgt['--local-thinking-bg'] = thinkingOf(newAccent, other === 'dark').bg
+      tgt['--local-thinking-border'] = thinkingOf(newAccent, other === 'dark').border
+      tgt['--local-thinking-text'] = thinkingOf(newAccent, other === 'dark').text
       tgt['--color-active'] = hexA(newAccent, other === 'dark' ? 0.12 : 0.08)
-      tgt['--color-primary-mute'] = hexA(newAccent, 0.33)
-      tgt['--color-primary-soft'] = hexA(newAccent, 0.16)
+      tgt['--color-primary-mute'] = hexA(newAccent, 0.3)
+      tgt['--color-primary-soft'] = hexA(newAccent, 0.6)
     }
     syncSnapState()
   }
@@ -191,10 +198,12 @@ function App() {
       const tgt = ensureOtherSnapshot()
       const curSnap = snapCurrentVars()
       const SYNC_KEYS = ['--color-primary', '--color-background', '--color-background-soft',
-        '--chat-background-user', '--chat-background-ai', '--color-code-background']
+        '--chat-background-user', '--chat-background-ai', '--color-code-background', '--local-input-bg']
       SYNC_KEYS.forEach(v => { if (curSnap[v]) tgt[v] = convertColor(curSnap[v], varKind(v), other) })
       if (curSnap['--color-primary']) {
-        tgt['--local-thinking-text'] = curSnap['--color-primary']
+        tgt['--local-thinking-bg'] = thinkingOf(curSnap['--color-primary'], other === 'dark').bg
+        tgt['--local-thinking-border'] = thinkingOf(curSnap['--color-primary'], other === 'dark').border
+        tgt['--local-thinking-text'] = thinkingOf(curSnap['--color-primary'], other === 'dark').text
         tgt['--color-active'] = hexA(curSnap['--color-primary'], other === 'dark' ? 0.12 : 0.08)
       }
       syncSnapState()
@@ -213,8 +222,8 @@ function App() {
     })
     const statePatch = { ...o }
     if (o['--color-primary']) {
-      const s = hexA(o['--color-primary'], 0.16)
-      const m = hexA(o['--color-primary'], 0.33)
+      const s = hexA(o['--color-primary'], 0.6)
+      const m = hexA(o['--color-primary'], 0.3)
       r.style.setProperty('--color-primary-soft', s)
       r.style.setProperty('--color-primary-mute', m)
       currentVars.current['--color-primary-soft'] = s
@@ -265,7 +274,7 @@ function App() {
 
   const getVal = p => {
     if (p.kind === 'range') { const n = parseFloat(curVars[p.v]); return isNaN(n) ? p.def : n }
-    if (p.v === '--color-link-hover') return curVars[p.v] || linkHoverOf(curVars['--color-link'] || '')
+    if (p.v === '--color-link-hover') return curVars[p.v] || linkHoverOf(curVars['--color-link'] || '', mode === 'dark')
     let v = curVars[p.v]
     if (!v && p.v === '--table-border') v = curVars['--color-border']
     return v
@@ -277,8 +286,13 @@ function App() {
     if (p.v === '--color-primary') {
       const hex = toHex(val)
       const prevAccent = cssVar('--color-primary')
+      const curDark = modeRef.current === 'dark'
       setVar('--color-primary', hex)
-      if (prevAccent && cssVar('--local-thinking-text') === prevAccent) setVar('--local-thinking-text', hex)
+      if (prevAccent && cssVar('--local-thinking-text') === thinkingOf(prevAccent, curDark).text) {
+        setVar('--local-thinking-bg', thinkingOf(hex, curDark).bg)
+        setVar('--local-thinking-border', thinkingOf(hex, curDark).border)
+        setVar('--local-thinking-text', thinkingOf(hex, curDark).text)
+      }
       syncToOtherMode('--color-primary', hex, 'accent')
       return
     }
@@ -516,9 +530,14 @@ function App() {
     if (!startEdit(() => onAccentBallChange(v))) return
     initDraftBase()
     const prevAccent = cssVar('--color-primary')
+    const curDark = modeRef.current === 'dark'
     setVar('--color-primary', v)
     setVar('--color-active', hexA(v, modeRef.current === 'dark' ? 0.12 : 0.08))
-    if (prevAccent && cssVar('--local-thinking-text') === prevAccent) setVar('--local-thinking-text', v)
+    if (prevAccent && cssVar('--local-thinking-text') === thinkingOf(prevAccent, curDark).text) {
+      setVar('--local-thinking-bg', thinkingOf(v, curDark).bg)
+      setVar('--local-thinking-border', thinkingOf(v, curDark).border)
+      setVar('--local-thinking-text', thinkingOf(v, curDark).text)
+    }
     syncToOtherMode('--color-primary', v, 'accent')
     setTick(t => t + 1)
     commitHistory()
@@ -598,7 +617,7 @@ function App() {
   }
 
   const onStripPointerDown = e => {
-    if (e.target.closest('.preset') || e.target.closest('.mode-seg') || e.target.closest('.mode-toggle') || e.target.closest('.sync-toggle') || e.target.closest('input') || e.target.closest('button')) return
+    if (e.target.closest('.preset') || e.target.closest('.preset-drawer') || e.target.closest('.mode-seg') || e.target.closest('.mode-toggle') || e.target.closest('.sync-toggle') || e.target.closest('input') || e.target.closest('button')) return
     const strip = stripRef.current
     if (!strip) return
     dragRef.current = { dragging: true, startY: e.clientY, startBottom: parseInt(getComputedStyle(strip).bottom) || 16 }
@@ -660,6 +679,7 @@ function App() {
       if (!zone) return
       const vars = new Set()
       zone.parts.forEach(p => vars.add(p.v))
+      ;(zone.more || []).forEach(p => vars.add(p.v))
       vars.forEach(v => { (VAR_LINKS[v] || []).forEach(zid => { document.querySelectorAll(ZONES[zid].sel).forEach(el => el.classList.add('pz-link')) }) })
     }
     function onKey(e) {
@@ -689,6 +709,24 @@ function App() {
   }, [popover])
 
   useEffect(() => {
+    if (!drawerOpen) return
+    function onDocDown(e) {
+      if (e.target.closest('.preset-drawer') || e.target.closest('.preset-strip')) return
+      setDrawerOpen(false)
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') setDrawerOpen(false)
+    }
+    document.addEventListener('mousedown', onDocDown, true)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocDown, true)
+      document.removeEventListener('keydown', onKey)
+      clearTimeout(drawerLeaveTimer.current)
+    }
+  }, [drawerOpen])
+
+  useEffect(() => {
     if (leaveNameMode && leaveNameInputRef.current) {
       leaveNameInputRef.current.focus()
       leaveNameInputRef.current.select()
@@ -702,6 +740,83 @@ function App() {
   const swatchRow = s => (
     <span className="swrow">{[s.bg, s.accent, s.ai, s.user].map((c, i) => <i key={i} style={{ background: c }} />)}</span>
   )
+
+  const presetCard = p => (
+    <div key={p.name} className={'preset' + (p.own ? ' own' : '') + (p.name === selName ? ' on' : '')} data-name={p.name} role="button" tabIndex={0}>
+      <span className="swatches">{swatchRow(p.dark)}{swatchRow(p.light)}</span>
+      <span className="nm">{p.name}</span>
+      <span className="badge">{p.cert}</span>
+      {p.own && <span className="del" title="删除" onClick={e => { e.stopPropagation(); delPreset(p.name) }}>✕</span>}
+      <span className="copycss">复制 CSS</span>
+    </div>
+  )
+
+  // 主题多时的展开抽屉：搜索 + 网格 + 分页
+  const PAGE_SIZE = 24
+  const q = search.trim().toLowerCase()
+  const filtered = q
+    ? presets.filter(p => (p.name && p.name.toLowerCase().includes(q)) || (p.cert && p.cert.toLowerCase().includes(q)))
+    : presets
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const curPage = Math.min(page, totalPages - 1)
+  const pageItems = filtered.slice(curPage * PAGE_SIZE, curPage * PAGE_SIZE + PAGE_SIZE)
+
+  const commitPage = () => {
+    let n = parseInt(pageStr, 10)
+    if (isNaN(n)) n = curPage + 1
+    n = Math.max(1, Math.min(totalPages, n))
+    setPage(n - 1)
+    setPageStr(String(n))
+  }
+
+  const prevPage = () => { if (curPage > 0) { setPage(curPage - 1); setPageStr(String(curPage)) } }
+  const nextPage = () => { if (curPage < totalPages - 1) { setPage(curPage + 1); setPageStr(String(curPage + 2)) } }
+
+  const toggleDrawer = () => {
+    if (drawerOpen) { setDrawerOpen(false); return }
+    setSearch('')
+    setPage(0)
+    setPageStr('1')
+    setDrawerOpen(true)
+  }
+
+  const onDrawerMouseEnter = () => clearTimeout(drawerLeaveTimer.current)
+  const onDrawerMouseLeave = e => {
+    const to = e.relatedTarget
+    if (to && to.closest && (to.closest('.preset-drawer') || to.closest('.preset-strip'))) return
+    clearTimeout(drawerLeaveTimer.current)
+    drawerLeaveTimer.current = setTimeout(() => setDrawerOpen(false), 240)
+  }
+
+  const onDrawerClick = e => {
+    const del = e.target.closest('.del')
+    if (del) { e.stopPropagation(); delPreset(del.closest('.preset').dataset.name); return }
+    const cp = e.target.closest('.copycss')
+    if (cp) {
+      const vis = parseFloat(getComputedStyle(cp).opacity) > 0.5
+      if (vis) { e.stopPropagation(); e.preventDefault(); copyPreset(cp.closest('.preset').dataset.name); return }
+    }
+    if (e.target.closest('input')) return
+    const card = e.target.closest('.preset')
+    if (!card) return
+    const name = card.dataset.name
+    const p = presetsRef.current.find(x => x.name === name)
+    if (!p) return
+    guardLeaveDraft(() => { selectPreset(name); applyPreset(p); setDrawerOpen(false); toast(`已切换到预设 · ${p.name}`) })
+  }
+
+  const onPresetKeyDown = e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    if (e.target.closest('input')) return
+    const card = e.target.closest('.preset')
+    if (!card || card.id === 'draftcard') return
+    const name = card.dataset.name
+    const p = presetsRef.current.find(x => x.name === name)
+    if (!p) return
+    e.preventDefault()
+    const inDrawer = !!e.currentTarget.closest('.preset-drawer')
+    guardLeaveDraft(() => { selectPreset(name); applyPreset(p); if (inDrawer) setDrawerOpen(false); toast(`已切换到预设 · ${p.name}`) })
+  }
 
   const popoverZone = popover ? ZONES[popover.id] : null
 
@@ -832,7 +947,7 @@ function App() {
 
       <button className="accent-ball pz" data-zone="accent" title="主色 Accent · 点我改主色" onClick={() => accentInputRef.current && accentInputRef.current.click()}>
         <span className="accent-ball-inner">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8.5" cy="12" r="5.5" /><circle cx="15.5" cy="12" r="5.5" /><circle cx="8.5" cy="12" r="1.9" fill="currentColor" stroke="none" /><circle cx="15.5" cy="12" r="1.9" fill="currentColor" stroke="none" /></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" /></svg>
           <span className="accent-ball-label">ACCENT</span>
         </span>
         <input type="color" id="accentBallInput" ref={accentInputRef}
@@ -843,17 +958,12 @@ function App() {
       <div className="preset-strip" id="strip" ref={stripRef}
         onPointerDown={onStripPointerDown}>
         <span className="strip-grip" title="拖动此条" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg></span>
-        <div className="preset-scroll" id="presets" onClick={onPresetClick}>
-          {presets.map(p => (
-            <div key={p.name} className={'preset' + (p.own ? ' own' : '') + (p.name === selName ? ' on' : '')} data-name={p.name} role="button" tabIndex={0}>
-              <span className="swatches">{swatchRow(p.dark)}{swatchRow(p.light)}</span>
-              <span className="nm">{p.name}</span>
-              <span className="badge">{p.cert}</span>
-              {p.own && <span className="del" title="删除" onClick={e => { e.stopPropagation(); delPreset(p.name) }}>✕</span>}
-              <span className="copycss">复制 CSS</span>
-            </div>
-          ))}
+        <div className="preset-scroll" id="presets" onClick={onPresetClick} onKeyDown={onPresetKeyDown}>
+          {presets.map(presetCard)}
         </div>
+        <button className={'expand-btn' + (drawerOpen ? ' on' : '')} id="expandBtn" title={drawerOpen ? '收起全部主题' : '展开全部主题'} onClick={toggleDrawer}>
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>
+        </button>
         {draft && draftChipRows() && (
           <div className="preset draftcard" id="draftcard">
             <span className="drafttag">新主题草案</span>
@@ -866,19 +976,45 @@ function App() {
           </div>
         )}
         <div className="vert"></div>
-        <label className="sync-toggle" id="syncToggle" title="改一个模式，另一模式自动跟随转换">
+        <label className="sync-toggle" id="syncToggle">
           <input type="checkbox" checked={sync} onChange={e => onSyncChange(e.target.checked)} />
           <span className="sync-track"><span className="sync-thumb"></span></span>
           <span className="sync-label">统一修改</span>
+          <span className="sync-help" tabIndex={0} aria-label="统一修改说明">
+            ?
+            <span className="sync-help-tip">开启：改一个模式会自动同步 dark / light 两版<br />关闭：另一模式保持当前颜色不受影响</span>
+          </span>
         </label>
         <div className="mode-toggle" id="modeToggle">
           <button className={'mode-seg' + (mode === 'dark' ? ' on' : '')} data-m="dark" title="Dark" onClick={() => setModeTo('dark')}>
-            <svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5" /></svg>
+            <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg>
           </button>
           <button className={'mode-seg' + (mode === 'light' ? ' on' : '')} data-m="light" title="Light" onClick={() => setModeTo('light')}>
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="currentColor" strokeWidth="0.5" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" stroke="currentColor" strokeWidth="1.4" /></svg>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
           </button>
         </div>
+        {drawerOpen && (
+          <div className="preset-drawer" id="presetDrawer" onMouseEnter={onDrawerMouseEnter} onMouseLeave={onDrawerMouseLeave}>
+            <div className="drawer-head">
+              <input className="drawer-search" placeholder="搜索主题名称 / 分类…" value={search}
+                onChange={e => { setSearch(e.target.value); setPage(0); setPageStr('1') }} />
+              <span className="drawer-count">{filtered.length} 个主题</span>
+            </div>
+            <div className="drawer-grid" onClick={onDrawerClick} onKeyDown={onPresetKeyDown}>
+              {pageItems.map(presetCard)}
+              {pageItems.length === 0 && <div className="drawer-empty">没有匹配的主题</div>}
+            </div>
+            <div className="drawer-pager">
+              <button onClick={prevPage} disabled={curPage <= 0} title="上一页">‹</button>
+              <input className="drawer-page" value={pageStr} title="页码"
+                onChange={e => setPageStr(e.target.value)}
+                onBlur={commitPage}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitPage() } }} />
+              <span className="tot">/ {totalPages}</span>
+              <button onClick={nextPage} disabled={curPage >= totalPages - 1} title="下一页">›</button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="inspector" id="inspector"></div>

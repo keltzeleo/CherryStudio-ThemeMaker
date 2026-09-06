@@ -7,8 +7,8 @@
   --color-text-2:rgba(240,240,240,.62);
   --color-text-3:rgba(240,240,240,.38);
   --color-primary:#E89975;
-  --color-primary-soft:rgba(232,153,117,.16);
-  --color-primary-mute:rgba(232,153,117,.33);
+  --color-primary-soft:rgba(232,153,117,.6);
+  --color-primary-mute:rgba(232,153,117,.3);
   --color-link:#338cff;
   --color-border:rgba(255,255,255,.09);
   --color-border-soft:rgba(255,255,255,.06);
@@ -29,6 +29,12 @@
   --local-thinking-bg:#2a2a2a;
   --local-thinking-border:#3a3a3a;
   --local-thinking-text:#E89975;
+  --local-input-bg:#303030;
+  --local-input-border:rgba(255,255,255,.09);
+  /* 工具 chrome 表面：只随暗/亮模式变化，不随主题配色变化（避免改列表底→draft/弹窗跟着变） */
+  --chrome-surface:#303030;
+  --chrome-inset:#3a3a3a;
+  --chrome-mute:#2a2a2a;
   --color-reference:#404040;
   --color-reference-text:#ffffff;
   --color-reference-background:#0b0e12;
@@ -41,6 +47,10 @@
   --scroll-thumb:#3f3f3f;
   --scroll-width:10px;
   --blur:12px;
+  /* 底部为浮动 dock 预留的空间；input bar 会被顶到 dock 之上，不再被遮挡 */
+  --dock-clear:136px;
+  --inputbar-h:52px;
+  --stream-pad-b:24px;
 }
 [data-mode="light"]{
   --color-background:#faf8f6;
@@ -50,8 +60,8 @@
   --color-text-2:rgba(0,0,0,.6);
   --color-text-3:rgba(0,0,0,.38);
   --color-primary:#E89975;
-  --color-primary-soft:rgba(232,153,117,.14);
-  --color-primary-mute:rgba(232,153,117,.25);
+  --color-primary-soft:rgba(232,153,117,.6);
+  --color-primary-mute:rgba(232,153,117,.3);
   --color-link:#1677ff;
   --color-border:rgba(20,10,5,.09);
   --color-border-soft:rgba(20,10,5,.05);
@@ -67,6 +77,11 @@
   --local-thinking-bg:#e9e9e9;
   --local-thinking-border:#dcdcdc;
   --local-thinking-text:#E89975;
+  --local-input-bg:#f4f4f4;
+  --local-input-border:rgba(20,10,5,.09);
+  --chrome-surface:#f4f4f4;
+  --chrome-inset:#ececec;
+  --chrome-mute:#e9e9e9;
   --color-reference:#cfe1ff;
   --color-reference-text:#000000;
   --color-reference-background:#f1f7ff;
@@ -96,7 +111,7 @@ body{
 .topbar{
   height:46px;flex:0 0 46px;display:flex;align-items:center;gap:14px;
   padding:0 18px;border-bottom:1px solid var(--color-border);
-  background:color-mix(in srgb,var(--color-background) 78%,transparent);
+  background:color-mix(in srgb,var(--chrome-surface) 78%,transparent);
   backdrop-filter:blur(var(--blur));
   position:relative;z-index:12;
 }
@@ -152,18 +167,18 @@ body{
 .topic .dot{width:7px;height:7px;border-radius:50%;background:var(--color-primary);flex:0 0 7px;margin-left:auto;opacity:0}
 .topic.on .dot{opacity:1}
 
-.chat{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.chat{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;padding-bottom:var(--dock-clear)}
 .chathead{
   height:44px;flex:0 0 44px;display:flex;align-items:center;gap:10px;padding:0 20px;
   border-bottom:1px solid var(--color-border);background:transparent;
 }
 .chathead .name{font-size:13px;font-weight:600}
 .chathead .meta{font:500 11px/1 system-ui;color:var(--color-text-3);letter-spacing:.04em}
-.stream{flex:1;overflow:auto;padding:26px 22px 130px}
+.stream{flex:1;overflow:auto;padding:26px 22px var(--stream-pad-b)}
 .stream::-webkit-scrollbar{width:var(--scroll-width,10px)}
 .stream::-webkit-scrollbar-thumb{background:var(--scroll-thumb,var(--color-background-mute));border-radius:8px}
 /* 可点改色的滚动条代理（覆盖在原生滚动条位置，纯叠加） */
-.scrolly{position:absolute;top:26px;right:6px;bottom:130px;width:var(--scroll-width,10px);border-radius:8px}
+.scrolly{position:absolute;top:26px;right:6px;bottom:calc(var(--dock-clear) + var(--inputbar-h));width:var(--scroll-width,10px);border-radius:8px}
 .scrolly .sthumb{position:absolute;left:0;right:0;top:0;height:34%;border-radius:8px;background:var(--scroll-thumb,var(--color-background-mute))}
 body.pick .scrolly:hover{outline:2px solid var(--color-primary);outline-offset:2px;outline-style:dashed;border-radius:8px}
 
@@ -236,46 +251,53 @@ table tbody tr:hover{background:var(--color-background-soft)}
 /* ── 底部悬浮预设条（主角是卡片，不是小黑点） ─────────────── */
 .preset-strip{
   position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
-  display:flex;align-items:center;gap:14px;max-width:94vw;
-  padding:12px 16px;border-radius:18px;
-  background:rgba(10,10,10,0.55);
+  display:flex;align-items:center;gap:12px;max-width:94vw;
+  padding:10px 14px;border-radius:16px;
   border:1px solid var(--color-border-soft);
-  backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);
   box-shadow:0 18px 50px -20px rgba(0,0,0,.55);
   z-index:20;cursor:grab;user-select:none;
   transition:bottom .2s ease;
 }
+/* 玻璃底放在 ::before 上，让 .preset-strip 自身不再是 backdrop root：
+   这样其子元素 .draftcard 的 backdrop-filter 才能真实模糊到聊天区背景 */
+.preset-strip::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;z-index:-1;
+  background:rgba(10,10,10,0.5);
+  backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);
+}
 .preset-strip.dragging{cursor:grabbing;transition:none}
-[data-mode="light"] .preset-strip{background:rgba(255,255,255,0.55)}
-.preset-scroll{display:flex;gap:10px;overflow-x:auto;padding:4px 2px;scrollbar-width:none}
+[data-mode="light"] .preset-strip::before{background:rgba(255,255,255,0.5)}
+.preset-scroll{display:flex;gap:8px;overflow-x:auto;padding:3px 1px;scrollbar-width:none}
 .preset-scroll::-webkit-scrollbar{display:none}
 .preset{
-  --w:96px;
-  width:var(--w);flex:0 0 var(--w);border-radius:12px;padding:7px;cursor:pointer;
+  --w:78px;
+  width:var(--w);flex:0 0 var(--w);border-radius:11px;padding:5px;cursor:pointer;
   background:transparent;border:1px solid transparent;
-  display:flex;flex-direction:column;gap:6px;
+  display:flex;flex-direction:column;gap:5px;
   position:relative;
 }
 .preset:hover{background:var(--color-hover)}
+.preset:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px}
 .preset.on{background:var(--color-primary-soft);border-color:var(--color-primary)}
-.preset .swatches{height:56px;border-radius:9px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
-.preset .swatches .swrow{flex:1;display:flex;overflow:hidden;border-radius:6px}
+.preset .swatches{height:40px;border-radius:8px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.preset .swatches .swrow{flex:1;display:flex;overflow:hidden;border-radius:5px}
 .preset .swatches .swrow i{flex:1}
-.preset .nm{font-size:11px;color:var(--color-text-2);text-align:left;padding-left:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preset .nm{font-size:10.5px;color:var(--color-text-2);text-align:left;padding-left:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .preset.on .nm{color:var(--color-primary);font-weight:600}
-.preset .badge{font-size:9px;color:var(--color-text-3);letter-spacing:.08em}
+.preset .badge{font-size:8px;color:var(--color-text-3);letter-spacing:.08em}
 /* 悬停卡 → 卡中心浮出「复制 CSS」小按钮 */
 .preset .copycss{
-  position:absolute;left:50%;top:29px;transform:translate(-50%,-6px);z-index:2;
+  position:absolute;left:50%;top:21px;transform:translate(-50%,-6px);z-index:2;
   padding:4px 9px;border-radius:7px;font-size:10px;font-weight:600;white-space:nowrap;
   background:var(--color-primary);color:#2b2b2b;cursor:pointer;opacity:0;pointer-events:none;
   transition:opacity .12s,transform .12s;box-shadow:0 4px 12px -4px rgba(0,0,0,.4);}
-.preset.on:hover .copycss{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+/* 必须先点进(pick)该 preset 才会显示 copycss，防止误触 */
+.preset.on .copycss{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
 /* 自建主题：右上角删除 */
 .preset .del{
   position:absolute;top:4px;right:4px;z-index:2;width:17px;height:17px;border-radius:6px;
   display:grid;place-items:center;font-size:11px;font-weight:700;line-height:1;cursor:pointer;
-  background:var(--color-background-mute);color:var(--color-text-2);border:1px solid var(--color-border);
+  background:var(--chrome-mute);color:var(--color-text-2);border:1px solid var(--color-border);
   opacity:0;transition:opacity .12s;
 }
 .preset.own:hover .del{opacity:1}
@@ -290,6 +312,58 @@ table tbody tr:hover{background:var(--color-background-soft)}
 .strip-grip:hover{background:var(--color-hover);color:var(--color-text)}
 .preset-strip.dragging .strip-grip{cursor:grabbing}
 .strip-grip svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round}
+/* 展开全部主题按钮（网格 icon） */
+.expand-btn{
+  flex:0 0 auto;width:34px;height:34px;border-radius:9px;border:1px solid var(--color-border-soft);
+  background:var(--chrome-inset);color:var(--color-text-2);cursor:pointer;display:grid;place-items:center;
+  transition:background .15s,color .15s;
+}
+.expand-btn:hover{background:var(--color-hover);color:var(--color-text)}
+.expand-btn.on{background:var(--color-primary);border-color:var(--color-primary);color:#2b2b2b}
+.expand-btn svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── 主题多时的展开抽屉：搜索 + 网格 + 分页 ─────────────── */
+.preset-drawer{
+  position:absolute;left:50%;bottom:calc(100% + 16px);transform:translateX(-50%);z-index:5;
+  width:min(760px,92vw);max-height:min(64vh,460px);
+  padding:14px;border-radius:16px;display:flex;flex-direction:column;gap:12px;
+  background:color-mix(in srgb,var(--chrome-surface) 62%,transparent);
+  border:1px solid var(--color-border-soft);
+  backdrop-filter:blur(26px) saturate(1.6);-webkit-backdrop-filter:blur(26px) saturate(1.6);
+  box-shadow:0 26px 60px -24px rgba(0,0,0,.7);
+  animation:drawerIn .18s ease;
+}
+@keyframes drawerIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.drawer-head{display:flex;align-items:center;gap:10px}
+.drawer-search{
+  flex:1;height:34px;padding:0 12px;border-radius:10px;font-size:13px;color:var(--color-text);
+  background:var(--chrome-inset);border:1px solid var(--color-border);outline:none;user-select:text;
+}
+.drawer-search:focus{border-color:var(--color-primary)}
+.drawer-count{font:500 11px/1 system-ui;color:var(--color-text-3);white-space:nowrap}
+.drawer-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;
+  overflow-y:auto;padding:2px;
+}
+.drawer-grid::-webkit-scrollbar{width:8px}
+.drawer-grid::-webkit-scrollbar-thumb{background:var(--scroll-thumb,var(--color-background-mute));border-radius:8px}
+.drawer-grid .preset{width:100%}
+/* 抽屉内同 rule：也要先选中(pick)才可复制 */
+.drawer-grid .preset.on .copycss{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+.drawer-empty{grid-column:1/-1;padding:24px 0;text-align:center;font-size:12px;color:var(--color-text-3)}
+.drawer-pager{display:flex;align-items:center;justify-content:center;gap:8px}
+.drawer-pager button{
+  width:30px;height:30px;border-radius:8px;border:1px solid var(--color-border);
+  background:var(--chrome-inset);color:var(--color-text-2);cursor:pointer;font-size:16px;line-height:1;
+}
+.drawer-pager button:hover:not(:disabled){background:var(--color-hover);color:var(--color-text)}
+.drawer-pager button:disabled{opacity:.32;cursor:not-allowed}
+.drawer-page{
+  width:44px;height:30px;text-align:center;border-radius:8px;font-size:13px;color:var(--color-text);
+  background:var(--chrome-inset);border:1px solid var(--color-border);outline:none;user-select:text;
+}
+.drawer-page:focus{border-color:var(--color-primary)}
+.drawer-pager .tot{font-size:12px;color:var(--color-text-3)}
 /* 预览右上角：浮动 Accent 大圆球 */
 .accent-ball{
   position:fixed;right:22px;top:64px;z-index:24;width:54px;height:54px;border-radius:50%;
@@ -304,7 +378,7 @@ table tbody tr:hover{background:var(--color-background-soft)}
 /* 底部条右侧：明暗切换 */
 .modebtn{
   width:46px;height:46px;border-radius:14px;border:1px solid var(--color-border-soft);
-  background:var(--color-background-soft);color:var(--color-text-2);cursor:pointer;flex:0 0 46px;
+  background:var(--chrome-surface);color:var(--color-text-2);cursor:pointer;flex:0 0 46px;
   display:grid;place-items:center;transition:background .15s,color .15s;
 }
 .modebtn:hover{background:var(--color-hover);color:var(--color-text)}
@@ -313,7 +387,7 @@ table tbody tr:hover{background:var(--color-background-soft)}
 /* ── 点击元素浮出的 mini inspector ─────────────────────── */
 .inspector{
   position:fixed;left:18px;bottom:18px;z-index:34;min-width:210px;max-width:300px;padding:13px;border-radius:15px;
-  background:color-mix(in srgb,var(--color-background) 72%,transparent);
+  background:color-mix(in srgb,var(--chrome-surface) 72%,transparent);
   border:1px solid var(--color-border-soft);backdrop-filter:blur(var(--blur));
   box-shadow:0 20px 48px -18px rgba(0,0,0,.55);
   transform:translateY(16px);opacity:0;pointer-events:none;
@@ -356,11 +430,12 @@ body.pick .pz.table-hl{outline:2px solid var(--color-primary);outline-offset:2px
    只有卡片与按钮本身仍可点（换主题 / 复制 CSS / 存草稿 ✓✕） */
 body.pick .preset-strip{pointer-events:none}
 body.pick .preset-strip .preset,body.pick .preset-strip .copycss,body.pick .preset-strip .mode-toggle,body.pick .preset-strip .mode-toggle *,body.pick .preset-strip .mode-seg,body.pick .preset-strip .del,body.pick .preset-strip input,body.pick .preset-strip button,body.pick .preset-strip .strip-grip,body.pick .preset-strip .draftcard,body.pick .preset-strip .sync-toggle,body.pick .preset-strip .sync-toggle *{pointer-events:auto}
+body.pick .preset-drawer,body.pick .preset-drawer *{pointer-events:auto}
 body.pick .preset-scroll{pointer-events:none}
 
 .popover{
   position:fixed;z-index:60;min-width:236px;max-width:330px;padding:12px;border-radius:14px;
-  background:color-mix(in srgb,var(--color-background) 84%,transparent);
+  background:color-mix(in srgb,var(--chrome-surface) 84%,transparent);
   border:1px solid var(--color-border-soft);backdrop-filter:blur(var(--blur));
   box-shadow:0 18px 46px -16px rgba(0,0,0,.55);
   max-height:78vh;overflow-y:auto;
@@ -376,8 +451,9 @@ body.pick .preset-scroll{pointer-events:none}
 .popover .prow:hover{background:var(--color-hover)}
 .popover .prow .chip{
   width:22px;height:22px;border-radius:6px;flex:0 0 22px;border:1px solid var(--color-border-soft);
-  background-image:linear-gradient(45deg,#8c8c8c 25%,transparent 25%,transparent 75%,#8c8c8c 75%),linear-gradient(45deg,#8c8c8c 25%,transparent 25%,transparent 75%,#8c8c8c 75%);
-  background-position:0 0,4px 4px;background-size:8px 8px;
+  /* 颜色层在最上（含 alpha），棋盘格垫底：不透明色盖住棋盘，半透明色透出棋盘 */
+  background-image:linear-gradient(var(--c,transparent),var(--c,transparent)),linear-gradient(45deg,#8c8c8c 25%,transparent 25%,transparent 75%,#8c8c8c 75%),linear-gradient(45deg,#8c8c8c 25%,transparent 25%,transparent 75%,#8c8c8c 75%);
+  background-position:0 0,0 0,4px 4px;background-size:100% 100%,8px 8px,8px 8px;
 }
 .popover .prow .lb{font-size:12px;flex:1}
 .popover .prow .val{font:500 10px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--color-text-3);letter-spacing:.02em}
@@ -403,23 +479,25 @@ body.pick .preset-scroll{pointer-events:none}
 table th{color:var(--table-header-text,var(--color-text))}
 .draftcard{
   position:absolute;left:50%;bottom:calc(100% + 16px);transform:translateX(-50%);z-index:6;
-  border-color:var(--color-primary);background:var(--color-background-soft);
-  box-shadow:0 18px 44px -18px rgba(0,0,0,.6),0 0 0 1px var(--color-primary-mute);
-  --w:calc(96px * 1.1);
+  width:236px;border-radius:14px;padding:11px;gap:8px;
+  border:1px solid var(--color-primary);
+  background:color-mix(in srgb,var(--chrome-surface) 58%,transparent);
+  backdrop-filter:blur(26px) saturate(1.6);-webkit-backdrop-filter:blur(26px) saturate(1.6);
+  box-shadow:0 22px 52px -22px rgba(0,0,0,.7),0 0 0 1px var(--color-primary-mute);
   animation:draftIn .16s ease;
 }
 @keyframes draftIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-.draftcard .swatches{height:64px}
-.drafttag{font-size:9px;color:var(--color-primary);font-weight:700;letter-spacing:.06em;padding-left:2px}
+.draftcard .swatches{height:58px}
+.drafttag{font-size:11px;color:var(--color-primary);font-weight:700;letter-spacing:.06em;padding-left:2px}
 /* 有 Draft 时，其它 Preset 卡压暗，引导先处理 Draft */
 body.has-draft .preset:not(#draftcard){opacity:.45;filter:saturate(.7);transition:opacity .2s,filter .2s}
-.draftrow{display:flex;align-items:center;gap:5px;margin-top:2px}
+.draftrow{display:flex;align-items:center;gap:6px;margin-top:3px}
 .draftrow input{
-  flex:1;min-width:0;height:22px;padding:0 7px;border-radius:7px;font-size:11px;color:var(--color-text);
-  background:var(--color-background-soft);border:1px solid var(--color-border);outline:none;
+  flex:1;min-width:0;height:30px;padding:0 11px;border-radius:9px;font-size:13px;color:var(--color-text);
+  background:var(--chrome-inset);border:1px solid var(--color-border);outline:none;user-select:text;
 }
-.draftrow input:focus{border-color:var(--color-primary)}
-.draftrow .dbtn{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--color-border);background:var(--color-background-soft)}
+.draftrow input:focus{border-color:var(--color-primary);background:var(--chrome-mute)}
+.draftrow .dbtn{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:14px;font-weight:700;cursor:pointer;border:1px solid var(--color-border);background:var(--chrome-inset)}
 .draftrow .dbtn.cancel{color:var(--color-text-3)}
 .draftrow .dbtn.cancel:hover{background:var(--color-hover)}
 .draftrow .dbtn.save{color:#2b2b2b;background:var(--color-primary);border-color:var(--color-primary)}
@@ -428,14 +506,14 @@ body.has-draft .preset:not(#draftcard){opacity:.45;filter:saturate(.7);transitio
 /* ── 离开 Draft 守门弹窗（三选：保存 / 丢弃 / 取消） ─────── */
 .dlg-mask{position:fixed;inset:0;z-index:80;display:none;place-items:center;background:rgba(0,0,0,.5);backdrop-filter:blur(2px)}
 .dlg-mask.show{display:grid}
-.dlg{width:340px;max-width:calc(100vw - 32px);padding:20px;border-radius:16px;background:var(--color-background-soft);border:1px solid var(--color-border);box-shadow:0 24px 60px -20px rgba(0,0,0,.6);animation:dlgIn .18s ease}
+.dlg{width:340px;max-width:calc(100vw - 32px);padding:20px;border-radius:16px;background:var(--chrome-surface);border:1px solid var(--color-border);box-shadow:0 24px 60px -20px rgba(0,0,0,.6);animation:dlgIn .18s ease}
 @keyframes dlgIn{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
 .dlg .dlg-t{font-size:15px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:8px}
 .dlg .dlg-t svg{width:16px;height:16px;stroke:var(--color-primary);stroke-width:1.7;fill:none;flex:0 0 16px}
 .dlg .dlg-d{font-size:12.5px;line-height:1.6;color:var(--color-text-2);margin-bottom:16px}
 .dlg-actions{display:flex;gap:8px;justify-content:flex-end}
 .dlg-actions.hide{display:none}
-.dlg-btn{height:32px;padding:0 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--color-border);background:var(--color-background);color:var(--color-text)}
+.dlg-btn{height:32px;padding:0 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--color-border);background:var(--chrome-inset);color:var(--color-text)}
 .dlg-btn:hover{background:var(--color-hover)}
 .dlg-btn.primary{background:var(--color-primary);border-color:var(--color-primary);color:#2b2b2b}
 .dlg-btn.primary:hover{filter:brightness(1.06)}
@@ -444,9 +522,9 @@ body.has-draft .preset:not(#draftcard){opacity:.45;filter:saturate(.7);transitio
 /* 保存为预设 → 就地转成命名输入行 */
 .dlg-name{display:none;align-items:center;gap:8px;margin-top:14px}
 .dlg-name.show{display:flex}
-.dlg-name input{flex:1;min-width:0;height:34px;padding:0 10px;border-radius:9px;font-size:13px;color:var(--color-text);background:var(--color-background);border:1px solid var(--color-border);outline:none}
+.dlg-name input{flex:1;min-width:0;height:34px;padding:0 10px;border-radius:9px;font-size:13px;color:var(--color-text);background:var(--chrome-inset);border:1px solid var(--color-border);outline:none}
 .dlg-name input:focus{border-color:var(--color-primary)}
-.dlg-name .dbtn{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:15px;font-weight:700;cursor:pointer;border:1px solid var(--color-border);background:var(--color-background-soft);flex:0 0 34px}
+.dlg-name .dbtn{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:15px;font-weight:700;cursor:pointer;border:1px solid var(--color-border);background:var(--chrome-inset);flex:0 0 34px}
 .dlg-name .dbtn.cancel{color:var(--color-text-3)}
 .dlg-name .dbtn.cancel:hover{background:var(--color-hover)}
 .dlg-name .dbtn.save{color:#2b2b2b;background:var(--color-primary);border-color:var(--color-primary)}
@@ -459,8 +537,8 @@ body.has-draft .preset:not(#draftcard){opacity:.45;filter:saturate(.7);transitio
 }
 .inputbar-inner{
   flex:1;height:36px;display:flex;align-items:center;gap:8px;padding:0 14px;
-  border-radius:18px;background:var(--color-background-soft);
-  border:1px solid var(--color-border);transition:border-color .2s,box-shadow .2s;
+  border-radius:18px;background:var(--local-input-bg);
+  border:1px solid var(--local-input-border);transition:border-color .2s,box-shadow .2s;
 }
 .inputbar-inner:hover{border-color:var(--color-primary-mute)}
 .inputbar-icon{width:16px;height:16px;stroke:var(--color-text-3);stroke-width:1.5;fill:none;flex:0 0 16px}
@@ -474,7 +552,7 @@ body.has-draft .preset:not(#draftcard){opacity:.45;filter:saturate(.7);transitio
 .inputbar-send svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
 
 /* ── Mode toggle (dark/light pair) ── */
-.mode-toggle{display:flex;gap:3px;padding:3px;border-radius:14px;background:var(--color-background-mute);border:1px solid var(--color-border-soft);flex:0 0 auto;position:relative;z-index:25}
+.mode-toggle{display:flex;gap:3px;padding:3px;border-radius:14px;background:var(--chrome-mute);border:1px solid var(--color-border-soft);flex:0 0 auto;position:relative;z-index:25}
 .mode-seg{
   width:40px;height:40px;border-radius:11px;border:none;background:transparent;
   color:var(--color-text-3);cursor:pointer;display:grid;place-items:center;transition:all .15s;
@@ -482,16 +560,19 @@ body.has-draft .preset:not(#draftcard){opacity:.45;filter:saturate(.7);transitio
 .mode-seg:hover{color:var(--color-text);background:var(--color-hover)}
 .mode-seg.on{background:var(--color-primary);color:#2b2b2b}
 .mode-seg.on[data-m="light"]{color:#fff}
-.mode-seg svg{width:18px;height:18px}
+.mode-seg svg{width:18px;height:18px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
 
 /* 统一修改 toggle */
 .sync-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;flex:0 0 auto;padding:0 4px}
 .sync-toggle input{display:none}
-.sync-track{width:32px;height:18px;border-radius:10px;background:var(--color-background-mute);border:1px solid var(--color-border-soft);position:relative;transition:background .2s}
+.sync-track{width:32px;height:18px;border-radius:10px;background:var(--chrome-mute);border:1px solid var(--color-border-soft);position:relative;transition:background .2s}
 .sync-thumb{position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--color-text-3);transition:left .2s,background .2s}
 .sync-toggle input:checked + .sync-track{background:var(--color-primary)}
 .sync-toggle input:checked + .sync-track .sync-thumb{left:16px;background:#fff}
 .sync-label{font-size:10px;color:var(--color-text-2);white-space:nowrap}
+.sync-help{position:relative;width:14px;height:14px;border-radius:50%;flex:0 0 14px;display:grid;place-items:center;font-size:9px;font-weight:700;color:var(--color-text-3);background:var(--chrome-mute);border:1px solid var(--color-border-soft);cursor:help}
+.sync-help-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:200px;padding:8px 10px;border-radius:8px;background:var(--chrome-surface);border:1px solid var(--color-border);color:var(--color-text);font-size:11px;font-weight:400;line-height:1.55;white-space:normal;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .15s,visibility .15s;z-index:60}
+.sync-help:hover .sync-help-tip,.sync-help:focus-visible .sync-help-tip{opacity:1;visibility:visible}
 
 .brand-theme{font-weight:400;color:var(--color-text-3);font-size:11px;margin-left:2px}
 

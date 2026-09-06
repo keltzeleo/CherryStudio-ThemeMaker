@@ -2,8 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { PRESETS, DEFAULT_GLOW } from '../src/theme/presets.js'
 import { VAR_KEYS, buildVars, varsToPlan, buildPresetCss, presetPlan } from '../src/theme/themeModel.js'
-import { convertColor, hexA, toHex } from '../src/utils/colors.js'
-import { parseColor } from '../src/utils/colorUtils.js'
+import { convertColor, hexA, toHex, linkHoverOf, varKind, thinkingOf } from '../src/utils/colors.js'
+import { parseColor, hexToRgbOnly } from '../src/utils/colorUtils.js'
 
 // 把任意 CSS 颜色归一化成统一的 rgba(r,g,b,a)，用于跨「预览格式 vs 官方
 // resolver 格式」的颜色等价比较（大小写 / 空格 / rgba vs hex 都视为同色）。
@@ -84,16 +84,39 @@ test('round-trip：预览变量在 varsToPlan/buildVars 间无损', () => {
   }
 })
 
-test('思考框文字默认跟随 accent（所见 == 所得 的关键联动）', () => {
+test('思考框文字/底/边默认来自 accent 的色调化派生（莫兰迪式降饱和，所见 == 所得 的关键联动）', () => {
   const plan = { bg: '#2b2b2b', accent: '#E89975' }
   const vars = buildVars(plan)
-  assert.equal(vars['--local-thinking-text'], '#E89975')
+  // 默认不再是生硬刷 accent，而是 accent 的降饱和同色相回声明 (dark) 三件套。
+  assert.equal(vars['--local-thinking-text'], thinkingOf('#E89975', true).text)
+  assert.equal(vars['--local-thinking-bg'], thinkingOf('#E89975', true).bg)
+  assert.equal(vars['--local-thinking-border'], thinkingOf('#E89975', true).border)
+  // 与 accent 保持同色相、但更灰淡 —— 不相等（不是纯 accent）
+  assert.notEqual(vars['--local-thinking-text'], '#E89975')
+  assert.notEqual(vars['--local-thinking-bg'], plan.bg)
 })
 
 test('统一修改：accent 在 dark/light 两模式保持同色', () => {
   const a = '#E89975'
   assert.equal(convertColor(a, 'accent', 'light'), a)
   assert.equal(convertColor(a, 'accent', 'dark'), a)
+})
+
+test('统一修改：链接跨模式只平移明度，不被 panel 规则洗白', () => {
+  // varKind 必须把 --color-link 归到 link，而非默认 panel（panel 会把亮色洗成 #ffffff）
+  assert.equal(varKind('--color-link'), 'link')
+  assert.equal(varKind('--color-link-hover'), 'link')
+  // 暗色链接 #6a9fd8 → 亮色应压暗且保留色相/饱和度（不是 #ffffff）
+  const lightLink = convertColor('#6a9fd8', 'link', 'light')
+  assert.notEqual(lightLink, '#ffffff')
+  const { r: lr, g: lg, b: lb } = parseColor(lightLink)
+  const { r: dr, g: dg, b: db } = parseColor('#6a9fd8')
+  assert.ok(lr < dr && lg < dg && lb < db, `亮色链接应压暗，得到 ${lightLink}`)
+  // 亮色链接 #2e6fb8 → 暗色应提亮
+  const darkLink = convertColor('#2e6fb8', 'link', 'dark')
+  const { r: hr, g: hg, b: hb } = parseColor(darkLink)
+  const { r: pr, g: pg, b: pb } = parseColor('#2e6fb8')
+  assert.ok(hr > pr && hg > pg && hb > pb, `暗色链接应提亮，得到 ${darkLink}`)
 })
 
 test('导出是分层 Cherry Studio CSS（非扁平 :root / [theme-mode=light]）', () => {
@@ -169,8 +192,13 @@ test('导出值 == 预览 buildVars 输出（所见 == 所得，官方名 ↔ �
     '--color-background': '--color-background',
     '--color-background-soft': '--color-background-soft',
     '--color-primary': '--color-primary',
+    '--color-primary-soft': '--color-primary-soft',
+    '--color-primary-mute': '--color-primary-mute',
     '--color-text-1': '--color-text',
     '--color-link': '--color-link',
+    '--color-hover': '--color-hover',
+    '--color-active': '--color-active',
+    '--color-border': '--color-border',
     '--navbar-background': '--sidebar',
     '--chat-background-user': '--chat-background-user',
     '--chat-text-user': '--chat-text-user',
@@ -246,4 +274,182 @@ test('所有预设均能导出为完整分层 CSS（>20KB）', () => {
 test('hexA 生成合法的 rgba（alpha-hex 边框格式，与 Cherry 官方一致）', () => {
   assert.equal(hexA('#E89975', 0.55), 'rgba(232,153,117,0.55)')
   assert.equal(toHex('#E89975'), '#e89975')
+})
+
+test('结构性颜色逐字节复现预览（表头底/表头文字/表格边框/滚动条滑块）', () => {
+  const MAP = {
+    '--local-table-header-bg': '--table-header',
+    '--local-table-header-text': '--table-header-text',
+    '--local-table-border': '--table-border',
+    '--color-scrollbar-thumb': '--scroll-thumb',
+  }
+  for (const p of PRESETS) {
+    const css = buildPresetCss(p)
+    for (const mode of ['dark', 'light']) {
+      const src = buildVars(presetPlan(p, mode), p.glow)
+      const block = mode === 'dark' ? { ...layer1(css, 'dark'), ...layer2(css, 'dark') }
+        : { ...layer1(css, 'light'), ...layer2(css, 'light') }
+      for (const [cherryName, previewName] of Object.entries(MAP)) {
+        if (!(cherryName in block)) continue
+        assert.equal(normColor(block[cherryName]), normColor(src[previewName]),
+          `${p.name}/${mode} ${cherryName} 应等于预览 ${previewName}`)
+      }
+    }
+  }
+})
+
+test('表格行悬停不再误用主色 accent', () => {
+  for (const p of PRESETS) {
+    const css = buildPresetCss(p)
+    for (const mode of ['dark', 'light']) {
+      const hover = layer2(css, mode)['--local-table-hover-bg']
+      const primary = buildVars(presetPlan(p, mode), p.glow)['--color-primary']
+      assert.notEqual(normColor(hover), normColor(primary), `${p.name}/${mode} 行悬停不应等于主色`)
+    }
+  }
+})
+
+test('导航栏分离：--navbar-background 跟随 --sidebar，mac 变体是它的 0.55 alpha', () => {
+  for (const p of PRESETS) {
+    const css = buildPresetCss(p)
+    for (const mode of ['dark', 'light']) {
+      const src = buildVars(presetPlan(p, mode), p.glow)
+      const block = mode === 'dark' ? { ...layer1(css, 'dark'), ...layer2(css, 'dark') }
+        : { ...layer1(css, 'light'), ...layer2(css, 'light') }
+      const nav = block['--navbar-background']
+      const mac = block['--navbar-background-mac']
+      assert.equal(normColor(nav), normColor(src['--sidebar']), `${p.name}/${mode} 导航栏应等于侧栏`)
+      const a = parseColor(nav)
+      const b = parseColor(mac)
+      assert.equal(b.r, a.r, `${p.name}/${mode} mac 红通道`)
+      assert.equal(b.g, a.g, `${p.name}/${mode} mac 绿通道`)
+      assert.equal(b.b, a.b, `${p.name}/${mode} mac 蓝通道`)
+      assert.equal(Math.round(b.a * 100) / 100, 0.55, `${p.name}/${mode} mac 应为 0.55 alpha`)
+    }
+  }
+})
+
+test('输入栏背景跟随预览 soft、边框跟随预览 border（输入框所见 == 所得）', () => {
+  for (const p of PRESETS) {
+    const css = buildPresetCss(p)
+    for (const mode of ['dark', 'light']) {
+      const src = buildVars(presetPlan(p, mode), p.glow)
+      const block = mode === 'dark' ? { ...layer1(css, 'dark'), ...layer2(css, 'dark') }
+        : { ...layer1(css, 'light'), ...layer2(css, 'light') }
+      // 输入框底 == 预览 --color-background-soft（字节一致）
+      assert.equal(normColor(block['--local-input-bg']), normColor(src['--color-background-soft']),
+        `${p.name}/${mode} 输入框底应等于 soft`)
+      // 输入框边框 == 预览 --color-border（逐字节一致）
+      assert.equal(normColor(block['--local-input-border']), normColor(src['--color-border']),
+        `${p.name}/${mode} 输入框边框应等于 border`)
+    }
+  }
+})
+
+test('表格单元格文字使用 text-2（与预览 .tablewrap tbody td 一致）', () => {
+  for (const p of PRESETS) {
+    const css = buildPresetCss(p)
+    assert.match(css, /\.markdown table td \{[^}]*color: var\(--color-text-2\)/, `${p.name} 表格 td 应使用 --color-text-2`)
+  }
+})
+
+test('primary-soft/mute 派生 alpha 与官方 useUserTheme 一致（0.6 / 0.3）', () => {
+  for (const p of PRESETS) {
+    const dark = layer1(buildPresetCss(p), 'dark')
+    assert.equal(Math.round(parseColor(dark['--color-primary-soft']).a * 100) / 100, 0.6, `${p.name} primary-soft alpha`)
+    assert.equal(Math.round(parseColor(dark['--color-primary-mute']).a * 100) / 100, 0.3, `${p.name} primary-mute alpha`)
+  }
+})
+
+test('--color-black-mute 跟随预设 mute（--color-background-mute 别名）', () => {
+  for (const p of PRESETS) {
+    const css = buildPresetCss(p)
+    for (const mode of ['dark', 'light']) {
+      const block = layer1(css, mode)
+      const src = buildVars(presetPlan(p, mode), p.glow)
+      assert.equal(normColor(block['--color-black-mute']), normColor(src['--color-background-mute']),
+        `${p.name}/${mode} black-mute 应等于预览 mute`)
+    }
+  }
+})
+
+test('代码函数色跟随 --kw-name（名称/函数，非 link）', () => {
+  for (const p of PRESETS) {
+    const css = buildPresetCss(p)
+    for (const mode of ['dark', 'light']) {
+      const src = buildVars(presetPlan(p, mode), p.glow)
+      const block = mode === 'dark' ? { ...layer1(css, 'dark'), ...layer2(css, 'dark') }
+        : { ...layer1(css, 'light'), ...layer2(css, 'light') }
+      assert.equal(block['--code-function-color'], src['--kw-name'],
+        `${p.name}/${mode} 代码函数色应等于预览 --kw-name`)
+      assert.notEqual(normColor(block['--code-function-color']), normColor(src['--color-link']),
+        `${p.name}/${mode} 代码函数色不应等于 link`)
+    }
+  }
+})
+
+test('导出 --sidebar-hover-* 全部源自预设 glow 色板（第 6 色循环回第 1 色，无硬编码杂色）', () => {
+  for (const p of PRESETS) {
+    const css = buildPresetCss(p)
+    const hover = {}
+    for (const m of css.matchAll(/--sidebar-hover-(\d):\s*([^;]+);/g)) hover[Number(m[1])] = m[2].trim()
+    const base = p.glow && p.glow.length ? p.glow : DEFAULT_GLOW
+    for (let i = 1; i <= 5; i++) {
+      assert.equal(hover[i], hexToRgbOnly(base[i - 1]), `${p.name} --sidebar-hover-${i} 应等于 glow[${i - 1}]`)
+    }
+    assert.equal(hover[6], hexToRgbOnly(base[0]), `${p.name} --sidebar-hover-6 应循环回 glow[0]，不得掺入硬编码杂色`)
+  }
+})
+
+test('自定义 border alpha 被逐字节保留（--color-border）', () => {
+  const p = {
+    name: 'custom-border',
+    dark: { bg: '#2b2b2b', accent: '#E89975', link: '#338cff', border: 'rgba(255,0,0,0.5)' },
+    light: { bg: '#faf8f6', accent: '#E89975', link: '#1677ff', border: 'rgba(0,0,255,0.3)' },
+  }
+  const css = buildPresetCss(p)
+  const darkBorder = layer1(css, 'dark')['--color-border']
+  const lightBorder = layer1(css, 'light')['--color-border']
+  assert.equal(Math.round(parseColor(darkBorder).a * 100) / 100, 0.5, 'dark border alpha 0.5')
+  assert.equal(Math.round(parseColor(lightBorder).a * 100) / 100, 0.3, 'light border alpha 0.3')
+  assert.equal(parseColor(darkBorder).r, 255, 'dark border 红通道')
+  assert.equal(parseColor(lightBorder).b, 255, 'light border 蓝通道')
+})
+
+test('border-soft/mute 跟随各自模式的 border 透明度（非共享 max）', () => {
+  const p = {
+    name: 'asym-border',
+    dark: { bg: '#2b2b2b', accent: '#E89975', link: '#338cff', border: 'rgba(255,255,255,0.2)' },
+    light: { bg: '#faf8f6', accent: '#E89975', link: '#1677ff', border: 'rgba(0,0,0,0.05)' },
+  }
+  const css = buildPresetCss(p)
+  const dark = layer1(css, 'dark')
+  const light = layer1(css, 'light')
+  // dark soft = 0.2 × 0.64 → #ffffff21；light soft = 0.05 × 0.64 → #00000008
+  // （若误用共享 max=0.2，light soft 会错成 #00000021）
+  assert.equal(dark['--color-border-soft'], '#ffffff21', 'dark soft')
+  assert.equal(light['--color-border-soft'], '#00000008', 'light soft')
+  assert.equal(dark['--color-border-mute'], '#ffffff0a', 'dark mute')
+  assert.equal(light['--color-border-mute'], '#00000003', 'light mute')
+})
+
+test('链接 hover 提升对比度：暗色提亮、亮色压暗（WCAG 方向，不反白淡出）', () => {
+  const chan = (c) => { const { r, g, b } = parseColor(c); return [r, g, b] }
+  for (const p of PRESETS) {
+    for (const mode of ['dark', 'light']) {
+      const src = buildVars(presetPlan(p, mode), p.glow)
+      const link = chan(src['--color-link'])
+      const hover = chan(src['--color-link-hover'])
+      if (mode === 'dark') {
+        for (let i = 0; i < 3; i++) assert.ok(hover[i] >= link[i], `${p.name}/dark 链接 hover 应提亮通道${i}（${link}→${hover}）`)
+      } else {
+        for (let i = 0; i < 3; i++) assert.ok(hover[i] <= link[i], `${p.name}/light 链接 hover 应压暗通道${i}（${link}→${hover}）`)
+      }
+    }
+  }
+  // 显式单测：亮色主题下 #1677ff hover 必须压暗（旧实现反白成 #4995ff，掉出 WCAG AA）
+  const darkHover = linkHoverOf('#1677ff', false)
+  assert.notEqual(darkHover, '#4995ff', '亮色 hover 不应再向白靠')
+  const [hr, hg, hb] = chan(darkHover)
+  assert.ok(hr <= 22 && hg <= 119 && hb <= 255, `亮色 hover 应整体压暗，得到 ${darkHover}`)
 })
