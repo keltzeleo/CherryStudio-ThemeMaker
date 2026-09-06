@@ -117,8 +117,6 @@ ${officialBlock(theme, false)}
 body[theme-mode] {
   --primary-color: ${primary} !important;
   --primary: ${primary} !important;
-  --font-family: var(--user-font-family), Ubuntu, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, Oxygen, Cantarell, 'Open Sans', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji' !important;
-  --code-font-family: var(--user-code-font-family), 'Cascadia Code', 'Fira Code', 'Consolas', Menlo, Courier, monospace !important;
 
   ${theme.enableRandomSidebarHover ? `
   --sidebar-hover-1: ${hexToRgbOnly(sbHover[0])};
@@ -315,7 +313,7 @@ ${theme.enableHoloGlass ? `
   border-radius: ${radius}px !important;
 }
 .markdown pre code, .tiptap pre code {
-  background: transparent !important; color: var(--color-code-text) !important; font-family: var(--code-font-family) !important;
+  background: transparent !important; color: var(--color-code-text) !important;
 }
 .shiki, .shiki code, .markdown .shiki, .tiptap .shiki, .markdown pre .hljs, .markdown pre code.hljs {
   background: var(--color-code-background) !important; color: var(--color-code-text) !important;

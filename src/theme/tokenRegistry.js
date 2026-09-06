@@ -776,7 +776,7 @@ export const TOKEN_REGISTRY = [
   },
   {
     id: 'userFont', officialKey: '--user-font-family', group: 'typography', valueMode: 'shared',
-    valueType: 'string', kind: 'official', editorHidden: true,
+    valueType: 'string', kind: 'official', exportVar: false, editorHidden: true,
     label: { en: 'UI Font Family', zh: '界面字体' },
     description: { en: 'Font family injected via --user-font-family (official useUserTheme).', zh: '通过 --user-font-family 注入的界面字体（官方 useUserTheme）。' },
     themeKey: 'userFontFamily', defaultDark: 'Inter, system-ui, -apple-system, sans-serif',
@@ -786,7 +786,7 @@ export const TOKEN_REGISTRY = [
   },
   {
     id: 'codeFont', officialKey: '--user-code-font-family', group: 'typography', valueMode: 'shared',
-    valueType: 'string', kind: 'official', editorHidden: true,
+    valueType: 'string', kind: 'official', exportVar: false, editorHidden: true,
     label: { en: 'Code Font Family', zh: '代码字体' },
     description: { en: 'Code font family injected via --user-code-font-family (official useUserTheme).', zh: '通过 --user-code-font-family 注入的代码字体（官方 useUserTheme）。' },
     themeKey: 'userCodeFontFamily', defaultDark: "ui-monospace, 'Cascadia Code', 'Fira Code', monospace",

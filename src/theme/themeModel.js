@@ -25,7 +25,8 @@ export const VAR_KEYS = [
 // Plan selection: a preset stores `dark` and `light` plans; fall back to the
 // preset object itself for single-mode legacy shapes.
 export function presetPlan(p, modeKey) {
-  return (modeKey === 'light' && p.light) ? p.light : (p.dark || p)
+  const plan = (modeKey === 'light' && p.light) ? p.light : (p.dark || p)
+  return p.scheme ? { ...plan, scheme: p.scheme } : plan
 }
 
 export function varsToPlan(o) {
@@ -52,7 +53,7 @@ export function buildVars(plan, glow) {
   const dk = isDark(s.bg)
   const tt = textTiers(s.bg)
   const g = glow || DEFAULT_GLOW
-  const harm = harmonySurface(s.accent, dk ? 'dark' : 'light')
+  const harm = harmonySurface(s.accent, dk ? 'dark' : 'light', s.scheme)
   return {
     '--color-background': s.bg,
     '--color-background-soft': s.soft,
@@ -120,6 +121,7 @@ export function varsToCss(vars) {
 // 实现同一套 registry/resolver/exportCss，值来自 buildVars() 输出，保证
 // 「所见 == 所得」，且输出的是 Cherry Studio 真实读取的分层 CSS。
 import { buildExportCss } from './exportCss.js'
+import { buildV2Css, CHERRY_V1_TARGET, CHERRY_V2_TARGET } from './exportV2.js'
 import { baseDefaultTheme } from './defaultTheme.js'
 import { parseColor } from '../utils/colorUtils.js'
 
@@ -132,7 +134,7 @@ function splitAlpha(color) {
 }
 
 // 从 buildVars 的预览变量表抽取导出所需的字段（与预览同源）。
-function fieldsOf(v) {
+export function fieldsOf(v) {
   const glowBase = [
     v['--sidebar-glow-1'], v['--sidebar-glow-2'], v['--sidebar-glow-3'],
     v['--sidebar-glow-4'], v['--sidebar-glow-5'],
@@ -289,13 +291,16 @@ function themeFromFields(dk, lt) {
 
 // 导出一套完整的 Cherry Studio 主题 CSS（layered，官方选择器），值均来自
 // buildVars()（与预览同源）。
-export function buildPresetCss(p) {
+// target === CHERRY_V2_TARGET 时走 v2.0.9 (Tailwind / shadcn) 命名空间；
+// 默认 'v1.9.12' 保持原样（旧调用/测试零回归）。
+export function buildPresetCss(p, target = CHERRY_V1_TARGET) {
   const glow = p.glow || DEFAULT_GLOW
-  const darkPlan = p.dark || p
-  const lightPlan = p.light || p.dark || p
-  const dk = fieldsOf(buildVars(darkPlan, glow))
-  const lt = fieldsOf(buildVars(lightPlan, glow))
+  const dk = fieldsOf(buildVars(presetPlan(p, 'dark'), glow))
+  const lt = fieldsOf(buildVars(presetPlan(p, 'light'), glow))
   const theme = themeFromFields(dk, lt)
+  if (target === CHERRY_V2_TARGET) {
+    return buildV2Css(dk, lt, { name: 'Theme Station V72', radius: Number(theme.borderRadius) || 12 })
+  }
   let css = buildExportCss(theme, { name: 'Theme Station V72' })
 
   const rowD = dk.tableRow, rowHD = dk.soft

@@ -64,22 +64,49 @@ export function thinkingOf(accent, dark) {
 //   表头 +60（邻色）、引用 +120（三元其二）、思考 +180（互补）、代码参数 +240（四元其四）
 // 同一色相轮驱动全部面，因此它们天然和声；所有面饱和度都被钳到莫兰迪区间，杜绝
 // 个别结构面「突然跳高饱和、脱离整体灰调」。所有值同时用于预览与导出，保证「所见==所得」。
-export function harmonySurface(accent, mode) {
+// 各预设的和声方案：四张「结构面」分别做不同色相旋转，而非一律四元（+60/+120/+180/+240）。
+// 每个方案给出一组 [表头, 引用, 思考, 代码参数] 的色相增量，并保证这四处彼此可区分、
+// 又都落在莫兰迪（低饱和）灰调带里。所有值同时用于预览与导出，保证「所见==所得」。
+const SCHEMES = {
+  tetradic:      [60, 120, 180, 240],   // 经典四元（默认）
+  analogous:     [20, 45, 70, 95],      // 邻近——同一色相带缓慢爬升，最温和
+  monochrome:    [0, 0, 0, 0],          // 同色相——只靠明度/饱和区分，最克制
+  complementary: [180, 240, 120, 60],   // 主面取互补的两极
+  triadic:       [120, 240, 60, 180],   // 三足鼎立的两组交错
+  splitComp:     [30, 150, 210, 90],    // 分裂互补——一对补色 + 两个邻色
+  square:        [90, 180, 270, 0],     // 方阵四等分
+}
+
+// 把某个面在暗/亮两模式下译为具体的莫兰迪色（饱和度 ≤26，引用竖线用 20 稍作强调）。
+function face(band, H, dark) {
+  const at = (dH, s, l) => hslToHex((H + dH) % 360, s, l)
+  switch (band) {
+    case 'table':        return dark ? at(0, 16, 26) : at(0, 18, 93)
+    case 'tableText':    return dark ? at(0, 16, 82) : at(0, 18, 34)
+    case 'quoteBg':      return dark ? at(0, 14, 19) : at(0, 14, 95)
+    case 'quoteLine':    return dark ? at(0, 20, 48) : at(0, 20, 42)
+    case 'quoteText':    return dark ? at(0, 15, 78) : at(0, 16, 38)
+    case 'thinkingBg':   return dark ? at(0, 12, 19) : at(0, 12, 96)
+    case 'thinkingBorder': return dark ? at(0, 16, 30) : at(0, 16, 89)
+    case 'thinkingText': return dark ? at(0, 24, 66) : at(0, 24, 36)
+    case 'codeParam':    return dark ? at(0, 22, 72) : at(0, 22, 36)
+  }
+}
+
+export function harmonySurface(accent, mode, scheme = 'tetradic') {
   const H = hexToHsl(accent).h
   const dark = mode === 'dark'
-  // 莫兰迪饱和带：结构面底/文字都压到 ≤26，只有引用竖线用 20 稍作强调，
-  // 仍属灰调。明度按模式调校以保住与 bg 的对比度。
-  const at = (dH, s, l) => hslToHex((H + dH) % 360, s, l)
+  const [t, q, n, c] = SCHEMES[scheme] || SCHEMES.tetradic
   return {
-    table:        dark ? at(60, 16, 26) : at(60, 18, 93),
-    tableText:    dark ? at(60, 16, 82) : at(60, 18, 34),
-    quoteBg:      dark ? at(120, 14, 19) : at(120, 14, 95),
-    quoteLine:    dark ? at(120, 20, 48) : at(120, 20, 42),
-    quoteText:    dark ? at(120, 15, 78) : at(120, 16, 38),
-    thinkingBg:   dark ? at(180, 12, 19) : at(180, 12, 96),
-    thinkingBorder: dark ? at(180, 16, 30) : at(180, 16, 89),
-    thinkingText: dark ? at(180, 24, 66) : at(180, 24, 36),
-    codeParam:    dark ? at(240, 22, 72) : at(240, 22, 36),
+    table:        face('table', H + t, dark),
+    tableText:    face('tableText', H + t, dark),
+    quoteBg:      face('quoteBg', H + q, dark),
+    quoteLine:    face('quoteLine', H + q, dark),
+    quoteText:    face('quoteText', H + q, dark),
+    thinkingBg:   face('thinkingBg', H + n, dark),
+    thinkingBorder: face('thinkingBorder', H + n, dark),
+    thinkingText: face('thinkingText', H + n, dark),
+    codeParam:    face('codeParam', H + c, dark),
   }
 }
 

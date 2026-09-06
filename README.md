@@ -13,7 +13,7 @@ What you see is **exactly** what gets exported as Cherry Studio CSS.
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff.svg)](https://vite.dev)
-[![Tests](https://img.shields.io/badge/tests-43%2F43%20passing-brightgreen.svg)](#-tests--测试)
+[![Tests](https://img.shields.io/badge/tests-54%2F54%20passing-brightgreen.svg)](#-tests--测试)
 
 </div>
 
@@ -46,26 +46,26 @@ What you see is **exactly** what gets exported as Cherry Studio CSS.
 
 ### Built-in · 内置预设
 
-| Preset | Accent · 主色 |
-| --- | --- |
-| `Kel Meow` | `#E89975` |
-| `Ceramic` | `#D98E63` |
-| `Morandi` | `#A88B6B` |
-| `Paper` | `#C97B4A` |
-| `Moss` | `#8db578` |
-| `Ocean` | `#6fb5d4` |
+| Preset | Accent · 主色 | Harmony scheme · 和声方案 |
+| --- | --- | --- |
+| `Kel Meow` | `#BE8B96` | analogous · 邻近 |
+| `Ceramic` | `#bdaf89` | tetradic · 四元 |
+| `Morandi` | `#675d79` | monochrome · 同色相 |
+| `Paper` | `#6b857e` | splitComp · 分裂互补 |
+| `Moss` | `#8db578` | square · 方阵 |
+| `Ocean` | `#6fb5d4` | complementary · 互补 |
 
 ### Custom · 自建预设
 
-| Preset | Accent · 主色 |
-| --- | --- |
-| `kelMeow` | `#cca83e` |
-| `kelMorandi` | `#3e72cc` |
-| `keltzeleo` | `#5acc3e` |
-| `meoink` | `#cc3e72` |
-| `meowMorandi` | `#893ecc` |
-| `taiyangTze` | `#cc633e` |
-| `tzeDimensions` | `#3eccad` |
+| Preset | Accent · 主色 | Harmony scheme · 和声方案 |
+| --- | --- | --- |
+| `kelMeow` | `#cca83e` | complementary · 互补 |
+| `kelMorandi` | `#3e72cc` | triadic · 三足 |
+| `keltzeleo` | `#5acc3e` | square · 方阵 |
+| `meoink` | `#cc3e72` | splitComp · 分裂互补 |
+| `meowMorandi` | `#893ecc` | analogous · 邻近 |
+| `taiyangTze` | `#cc633e` | monochrome · 同色相 |
+| `tzeDimensions` | `#3eccad` | triadic · 三足 |
 
 ---
 
@@ -99,10 +99,10 @@ npm run dev
 
 ## ✅ Tests · 测试
 
-**43/43 passing** — every edit is regression-checked.
+**54/54 passing** — every edit is regression-checked.
 
-- `test/export-consistency.test.js` · **32 tests** — locks the invariant that exported CSS values match the preview variables exactly (including the Morandi-style desaturated harmony surfaces for the thinking box / table header / reference / code-name backgrounds).
-- `test/ui/*.test.jsx` · **11 tests** — interaction (click-to-edit, undo/redo, draft fork) and alpha-channel consistency.
+- `test/export-consistency.test.js` + `test/export-v2.test.js` · **42 tests** — locks the invariant that exported CSS values match the preview variables exactly (including the Morandi-style desaturated harmony surfaces for the thinking box / table header / reference / code-name backgrounds, and the accent-tinted assistant/user bubble chips).
+- `test/ui/*.test.jsx` · **12 tests** — interaction (click-to-edit, undo/redo, draft fork) and alpha-channel consistency.
 
 ---
 
@@ -115,7 +115,8 @@ src/
 ├── theme/
 │   ├── tokenRegistry.js   # official v1.9.12 + Layer 2 token registry
 │   ├── resolver.js        # state → CSS variables (single resolution path)
-│   ├── exportCss.js       # layered Cherry Studio CSS exporter
+│   ├── exportCss.js       # layered V72 Cherry Studio CSS exporter
+│   ├── exportV2.js        # Cherry Studio v2.0.9 `--cs-*` exporter
 │   ├── themeModel.js      # preview model + bridge to the resolver
 │   ├── presets.js         # built-in presets (dark/light plans)
 │   ├── zones.js           # element → variable inspector mapping

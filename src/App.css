@@ -429,7 +429,7 @@ body.pick .pz.table-hl{outline:2px solid var(--color-primary);outline-offset:2px
 /* 点改色模式下：底部预设条的空白/玻璃底让点击穿透，不遮挡预览元素；
    只有卡片与按钮本身仍可点（换主题 / 复制 CSS / 存草稿 ✓✕） */
 body.pick .preset-strip{pointer-events:none}
-body.pick .preset-strip .preset,body.pick .preset-strip .copycss,body.pick .preset-strip .mode-toggle,body.pick .preset-strip .mode-toggle *,body.pick .preset-strip .mode-seg,body.pick .preset-strip .del,body.pick .preset-strip input,body.pick .preset-strip button,body.pick .preset-strip .strip-grip,body.pick .preset-strip .draftcard,body.pick .preset-strip .sync-toggle,body.pick .preset-strip .sync-toggle *{pointer-events:auto}
+body.pick .preset-strip .preset,body.pick .preset-strip .copycss,body.pick .preset-strip .mode-toggle,body.pick .preset-strip .mode-toggle *,body.pick .preset-strip .mode-seg,body.pick .preset-strip .target-toggle,body.pick .preset-strip .target-toggle *,body.pick .preset-strip .target-seg,body.pick .preset-strip .del,body.pick .preset-strip input,body.pick .preset-strip button,body.pick .preset-strip .strip-grip,body.pick .preset-strip .draftcard,body.pick .preset-strip .sync-toggle,body.pick .preset-strip .sync-toggle *{pointer-events:auto}
 body.pick .preset-drawer,body.pick .preset-drawer *{pointer-events:auto}
 body.pick .preset-scroll{pointer-events:none}
 
@@ -561,6 +561,17 @@ body.has-draft .preset:not(#draftcard){opacity:.45;filter:saturate(.7);transitio
 .mode-seg.on{background:var(--color-primary);color:#2b2b2b}
 .mode-seg.on[data-m="light"]{color:#fff}
 .mode-seg svg{width:18px;height:18px;stroke:currentColor;stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* 导出目标版本切换（v1.9.12 / v2.0.9） */
+.target-toggle{display:flex;gap:3px;padding:3px;border-radius:14px;background:var(--chrome-mute);border:1px solid var(--color-border-soft);flex:0 0 auto;position:relative;z-index:25}
+.target-seg{
+  width:auto;height:34px;padding:0 12px;border-radius:9px;border:none;background:transparent;
+  color:var(--color-text-3);cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.02em;
+  display:grid;place-items:center;transition:all .15s;white-space:nowrap;
+}
+.target-seg:hover{color:var(--color-text);background:var(--color-hover)}
+.target-seg.on{background:var(--color-primary);color:#2b2b2b}
+
 
 /* 统一修改 toggle */
 .sync-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;flex:0 0 auto;padding:0 4px}

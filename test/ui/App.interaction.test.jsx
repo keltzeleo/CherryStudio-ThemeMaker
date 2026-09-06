@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import App from '../../src/App.jsx'
+import { buildPresetCss } from '../../src/theme/themeModel.js'
+import { CHERRY_V1_TARGET, CHERRY_V2_TARGET } from '../../src/theme/exportV2.js'
 
 if (typeof window.requestAnimationFrame !== 'function') {
   window.requestAnimationFrame = cb => { cb(0); return 1 }
@@ -48,6 +50,20 @@ describe('Theme Station 交互层', () => {
     expect(document.documentElement.getAttribute('data-mode')).toBe('light')
     expect(lightBtn.classList.contains('on')).toBe(true)
     expect(darkBtn.classList.contains('on')).toBe(false)
+  })
+
+  it('导出目标切换：默认 1.9.12，点 v2 后选中且导出 v2 CSS', () => {
+    render(<App />)
+    const v1Btn = document.querySelector('.target-seg[data-t="' + CHERRY_V1_TARGET + '"]')
+    const v2Btn = document.querySelector('.target-seg[data-t="' + CHERRY_V2_TARGET + '"]')
+    expect(v1Btn.classList.contains('on')).toBe(true)
+    expect(v2Btn.classList.contains('on')).toBe(false)
+    fireEvent.click(v2Btn)
+    expect(v2Btn.classList.contains('on')).toBe(true)
+    expect(v1Btn.classList.contains('on')).toBe(false)
+    // 导出目标与 buildPresetCss 的 v2 分组行为一致（干净切换：v1 分层 / v2 :root+.dark）
+    expect(buildPresetCss({ bg: '#2b2b2b' }, CHERRY_V2_TARGET)).toMatch(/\n:root \{/)
+    expect(buildPresetCss({ bg: '#2b2b2b' }, CHERRY_V1_TARGET)).toMatch(/body\[theme-mode="dark"\]/)
   })
 
   it('点击 .pz 区域打开 inspector 浮层，点击外部关闭', () => {

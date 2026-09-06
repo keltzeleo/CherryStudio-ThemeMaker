@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { PRESETS, DEFAULT_GLOW } from './theme/presets.js'
 import { ZONES, VAR_LINKS } from './theme/zones.js'
 import { VAR_KEYS, varsToPlan, presetPlan, buildVars, buildPresetCss } from './theme/themeModel.js'
+import { CHERRY_V1_TARGET, CHERRY_V2_TARGET } from './theme/exportV2.js'
 import { hexA, toHex, linkHoverOf, convertColor, varKind, thinkingOf } from './utils/colors.js'
 import { parseColor, roundAlpha } from './utils/colorUtils.js'
 
@@ -99,6 +100,7 @@ function RangeRow({ part, value, onChange, onCommit }) {
 
 function App() {
   const [mode, setMode] = useState('dark')
+  const [exportTarget, setExportTarget] = useState(CHERRY_V1_TARGET)
   const [selName, setSelName] = useState('Kel Meow')
   const [presets, setPresets] = useState(PRESETS)
   const [draft, setDraft] = useState(false)
@@ -546,7 +548,7 @@ function App() {
 
   const copyPreset = name => {
     const p = presetsRef.current.find(x => x.name === name)
-    const css = p ? buildPresetCss(p) : buildPresetCss(currentPreset())
+    const css = p ? buildPresetCss(p, exportTarget) : buildPresetCss(currentPreset(), exportTarget)
     copyText(css).then(ok => toast(ok ? '已复制完整 Cherry Studio CSS' : '复制失败，请手动复制'))
   }
 
@@ -992,6 +994,10 @@ function App() {
           <button className={'mode-seg' + (mode === 'light' ? ' on' : '')} data-m="light" title="Light" onClick={() => setModeTo('light')}>
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
           </button>
+        </div>
+        <div className="target-toggle" id="targetToggle" title="导出目标版本">
+          <button className={'target-seg' + (exportTarget === CHERRY_V1_TARGET ? ' on' : '')} data-t={CHERRY_V1_TARGET} onClick={() => setExportTarget(CHERRY_V1_TARGET)}>1.9.12</button>
+          <button className={'target-seg' + (exportTarget === CHERRY_V2_TARGET ? ' on' : '')} data-t={CHERRY_V2_TARGET} onClick={() => setExportTarget(CHERRY_V2_TARGET)}>v2</button>
         </div>
         {drawerOpen && (
           <div className="preset-drawer" id="presetDrawer" onMouseEnter={onDrawerMouseEnter} onMouseLeave={onDrawerMouseLeave}>

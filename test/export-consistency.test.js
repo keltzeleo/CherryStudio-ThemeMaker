@@ -171,13 +171,13 @@ test('Layer 2 结构扩展变量存在于导出（侧栏/表格/思考/语法/�
   for (const k of extKeys) assert.ok(k in extDark, `Layer 2 扩展变量 ${k} 应出现在扩展块`)
 })
 
-test('共享块包含 --primary / 字体 / 侧栏 hover 六色', () => {
+test('共享块包含 --primary / 侧栏 hover 六色，且不覆盖字体（跟随 Cherry 自身设置）', () => {
   const css = buildPresetCss(PRESETS[0])
   assert.match(css, /--primary-color:\s*[^;]+;/)
-  assert.match(css, /--font-family:\s*var\(--user-font-family\)/)
-  assert.match(css, /--code-font-family:\s*var\(--user-code-font-family\)/)
   assert.match(css, /--sidebar-hover-1:/)
   assert.match(css, /--sidebar-hover-6:/)
+  assert.ok(!/--font-family:\s*var\(--user-font-family\)/.test(css), '不应导出 --font-family 覆盖 Cherry 字体')
+  assert.ok(!/--code-font-family:\s*var\(--user-code-font-family\)/.test(css), '不应导出 --code-font-family')
 })
 
 test('dark/light 背景色不同（mode 切换有效）', () => {
