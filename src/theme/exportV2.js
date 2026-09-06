@@ -92,7 +92,7 @@ function v2Tokens(f) {
     ['--cs-muted-foreground', f.text3],
     ['--cs-foreground-tertiary', f.text3],
     ['--cs-foreground-disabled', f.text3],
-    ['--cs-card', f.aiBg],
+    ['--cs-card', f.soft],
     ['--cs-card-foreground', f.text],
     ['--cs-popover', f.bg],
     ['--cs-popover-foreground', f.text],
@@ -123,7 +123,7 @@ function v2Tokens(f) {
     // ── Layer 2 · bare shadcn aliases (mirror the app's var(--cs-*) mapping) ──
     ['--background', f.bg],
     ['--foreground', f.text],
-    ['--card', f.aiBg],
+    ['--card', f.soft],
     ['--card-foreground', f.text],
     ['--popover', f.bg],
     ['--popover-foreground', f.text],
@@ -155,7 +155,7 @@ function v2Tokens(f) {
     ['--foreground-disabled', f.text3],
     ['--link', f.link],
     ['--code-block', f.codeBg],
-    ['--inline-code', f.inputBg],
+    ['--inline-code', f.mute],
     ['--inline-code-foreground', f.kwKeyword],
     ['--reference', f.ref],
     ['--reference-foreground', f.refText],
@@ -169,7 +169,25 @@ function v2Tokens(f) {
     ['--resource-list-row-active-foreground', f.text],
     ['--resource-list-row-selected', f.hover],
     ['--resource-list-row-selected-foreground', f.text],
+    // ── Syntax highlighting (Theme Station extension; hljs DOM classes are
+    //    cross-version, v2.0.9 defines no syntax tokens, so we theme them
+    //    directly via the same buildVars the preview renders) ──
+    ['--syntax-keyword', f.kwKeyword],
+    ['--syntax-string', f.kwString],
+    ['--syntax-literal', f.kwLiteral],
+    ['--syntax-function', f.kwName],
+    ['--syntax-comment', f.kwComment],
+    ['--syntax-punctuation', resolveVarRef(f.kwPunct, f.text3)],
   ]
+}
+
+// v1 default for --kw-punct is `var(--color-text-3)`; resolve any v1 var
+// reference to its resolved preview color so no v1 `--color-*` leaks into v2.
+function resolveVarRef(value, fallback) {
+  const m = /^var\((--[\w-]+)\)$/.exec((value || '').trim())
+  if (!m) return value
+  if (m[1] === '--color-text-3') return fallback
+  return value
 }
 
 /**
@@ -230,16 +248,22 @@ ${glowTokens(true)}
 .dark .sidebar-theme {
 ${glowTokens(false)}
 }
-/* ====== Stable markdown penetrations (read Theme Station v2 tokens) ====== */
+/* ====== Markdown penetrations (read the v2 product tokens above; the v2 base
+   CSS hard-codes some surfaces, so we re-route them to our tokens + source
+   order — later block, equal specificity → wins). ====== */
 ::selection { background-color: var(--accent) !important; color: var(--accent-foreground) !important; }
 
-.markdown pre, .tiptap pre, .shiki {
+.markdown pre, .tiptap pre, .shiki, .prose pre {
   background-color: var(--code-block) !important;
   color: var(--foreground) !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--radius) !important;
 }
-.markdown p code, .markdown li code, .markdown code:not(pre code), .tiptap code {
+.markdown pre code, .tiptap pre code, .prose pre code {
+  background: transparent !important;
+  color: var(--foreground) !important;
+}
+.markdown p code, .markdown li code, .markdown code:not(pre code), .tiptap code, .prose code:not(pre code) {
   background-color: var(--inline-code) !important;
   color: var(--inline-code-foreground) !important;
   border-radius: 6px !important;
@@ -249,29 +273,27 @@ ${glowTokens(false)}
   border-left: 4px solid var(--reference) !important;
   color: var(--reference-foreground) !important;
 }
+.markdown blockquote { border-left-color: var(--reference) !important; }
 .markdown table {
   border: 1px solid var(--border) !important;
   border-radius: var(--radius) !important;
 }
-.markdown blockquote { border-left-color: var(--reference) !important; }
 
-/* ====== Code / inline-code are hard-coded in the v2 base CSS; re-route
-   them to our product tokens so syntax & inline spans follow the preview. ====== */
-.markdown pre, .tiptap pre, .shiki, .prose pre {
-  background-color: var(--code-block) !important;
-  color: var(--foreground) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius) !important;
-}
-.markdown p code:not(.hljs), .markdown li code:not(.hljs), .tiptap code {
-  background-color: var(--inline-code) !important;
-  color: var(--inline-code-foreground) !important;
-  border-radius: 4px !important;
-}
 /* Chat bubbles: the user bubble is hard-coded --chat-user; re-route the
    AI/other surfaces to the content card tone so chat matches the preview. */
 .user-message, .user-bubble, [data-user-message] {
   background-color: var(--chat-user) !important;
 }
+
+/* ====== Code Syntax — hljs DOM classes are cross-version (v2.0.9 defines no
+   syntax tokens), so we theme them directly via the --syntax-* tokens above. ====== */
+.markdown .hljs-keyword, .markdown .hljs-built_in, .markdown .hljs-type, .tiptap .hljs-keyword, .tiptap .hljs-built_in, .tiptap .hljs-type, .prose .hljs-keyword, .prose .hljs-built_in, .prose .hljs-type { color: var(--syntax-keyword) !important; }
+.markdown .hljs-string, .markdown .hljs-attr, .markdown .hljs-template-variable, .tiptap .hljs-string, .tiptap .hljs-attr, .tiptap .hljs-template-variable, .prose .hljs-string, .prose .hljs-attr, .prose .hljs-template-variable { color: var(--syntax-string) !important; }
+.markdown .hljs-number, .markdown .hljs-literal, .tiptap .hljs-number, .tiptap .hljs-literal, .prose .hljs-number, .prose .hljs-literal { color: var(--syntax-literal) !important; }
+.markdown .hljs-title, .markdown .hljs-function, .markdown .hljs-title.function_, .markdown .hljs-variable, .markdown .hljs-param, .tiptap .hljs-title, .tiptap .hljs-function, .tiptap .hljs-title.function_, .tiptap .hljs-variable, .tiptap .hljs-param, .prose .hljs-title, .prose .hljs-function, .prose .hljs-title.function_, .prose .hljs-variable, .prose .hljs-param { color: var(--syntax-function) !important; }
+.markdown .hljs-comment, .markdown .hljs-quote, .tiptap .hljs-comment, .tiptap .hljs-quote, .prose .hljs-comment, .prose .hljs-quote { color: var(--syntax-comment) !important; font-style: italic !important; }
+.markdown .hljs-punctuation, .markdown .hljs-symbol, .markdown .hljs-operator, .tiptap .hljs-punctuation, .tiptap .hljs-symbol, .tiptap .hljs-operator, .prose .hljs-punctuation, .prose .hljs-symbol, .prose .hljs-operator { color: var(--syntax-punctuation) !important; }
+.markdown .hljs-class, .markdown .hljs-title.class_, .tiptap .hljs-class, .tiptap .hljs-title.class_, .prose .hljs-class, .prose .hljs-title.class_ { color: var(--syntax-function) !important; }
+.markdown pre ::selection, .tiptap pre ::selection, .prose pre ::selection { background-color: var(--highlight-accent) !important; }
 `
 }

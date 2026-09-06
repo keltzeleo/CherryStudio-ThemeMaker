@@ -13,7 +13,7 @@ What you see is **exactly** what gets exported as Cherry Studio CSS.
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff.svg)](https://vite.dev)
-[![Tests](https://img.shields.io/badge/tests-54%2F54%20passing-brightgreen.svg)](#-tests--测试)
+[![Tests](https://img.shields.io/badge/tests-55%2F55%20passing-brightgreen.svg)](#-tests--测试)
 
 </div>
 
@@ -99,7 +99,7 @@ npm run dev
 
 ## ✅ Tests · 测试
 
-**54/54 passing** — every edit is regression-checked.
+**55/55 passing** — every edit is regression-checked.
 
 - `test/export-consistency.test.js` + `test/export-v2.test.js` · **42 tests** — locks the invariant that exported CSS values match the preview variables exactly (including the Morandi-style desaturated harmony surfaces for the thinking box / table header / reference / code-name backgrounds, and the accent-tinted assistant/user bubble chips).
 - `test/ui/*.test.jsx` · **12 tests** — interaction (click-to-edit, undo/redo, draft fork) and alpha-channel consistency.

@@ -72,6 +72,8 @@ test('v2 完整包含 shadcn 官方 + Cherry product 语义 token（dark/light �
     '--code-block', '--inline-code', '--inline-code-foreground',
     '--reference', '--reference-foreground', '--reference-subtle',
     '--highlight', '--highlight-accent', '--chat-user',
+    '--syntax-keyword', '--syntax-string', '--syntax-literal',
+    '--syntax-function', '--syntax-comment', '--syntax-punctuation',
   ]
   for (const k of [...shadcn, ...product]) {
     assert.ok(k in root, `light :root 缺 ${k}`)
@@ -109,6 +111,12 @@ test('v2 输出 v2.0.9 的 --cs-* palette 命名空间（layer 1，全覆盖的�
   assert.equal(normColor(root['--cs-primary']), normColor(srcL['--color-primary']), 'cs-primary light')
   assert.equal(normColor(dark['--cs-sidebar']), normColor(srcD['--sidebar']), 'cs-sidebar dark')
   assert.equal(normColor(root['--cs-sidebar']), normColor(srcL['--sidebar']), 'cs-sidebar light')
+  // --card 是「卡片/输入栏底」(bg-card)，必须是 不透明 的 soft 表面，不能用近乎全透明的 AI 气泡
+  // 染色 (f.aiBg, 3-5% alpha) —— 否则输入栏/卡片看起来半透明、发灰。预览输入栏底正好是 soft。
+  assert.equal(normColor(dark['--cs-card']), normColor(srcD['--color-background-soft']), 'cs-card dark = soft')
+  assert.equal(normColor(root['--cs-card']), normColor(srcL['--color-background-soft']), 'cs-card light = soft')
+  assert.equal(normColor(dark['--card']), normColor(srcD['--color-background-soft']), 'card dark = soft')
+  assert.equal(normColor(root['--card']), normColor(srcL['--color-background-soft']), 'card light = soft')
   assert.equal(normColor(dark['--cs-border']), normColor(srcD['--color-border']), 'cs-border dark')
   assert.equal(normColor(root['--cs-border']), normColor(srcL['--color-border']), 'cs-border light')
 })
@@ -165,6 +173,36 @@ test('v2 每预设 dark/light 两块都有 --sidebar 且跟随预览 --sidebar',
     const srcL = buildVars(presetPlan(p, 'light'), p.glow)
     assert.equal(normColor(dark['--sidebar']), normColor(srcD['--sidebar']), `${p.name}/dark sidebar`)
     assert.equal(normColor(root['--sidebar']), normColor(srcL['--sidebar']), `${p.name}/light sidebar`)
+  }
+})
+
+test('v2 --inline-code 取自预览 muted 底（非 inputBg），hljs 语法块存在且绑定 --syntax-*', () => {
+  for (const p of PRESETS) {
+    const css = v2(p)
+    const root = parseVars(extractBlock(css, ':root') || '')
+    const dark = parseVars(extractBlock(css, '.dark') || '')
+    const srcD = buildVars(presetPlan(p, 'dark'), p.glow)
+    const srcL = buildVars(presetPlan(p, 'light'), p.glow)
+    // inline-code 是行内 code 的底 → 预览的 --color-background-mute，而非输入栏底
+    assert.equal(normColor(dark['--inline-code']), normColor(srcD['--color-background-mute']), `${p.name}/dark inline-code`)
+    assert.equal(normColor(root['--inline-code']), normColor(srcL['--color-background-mute']), `${p.name}/light inline-code`)
+    // 语法 token 与预览同源
+    const pairs = [
+      ['--syntax-keyword', '--kw-keyword'], ['--syntax-string', '--kw-string'],
+      ['--syntax-literal', '--kw-literal'], ['--syntax-function', '--kw-name'],
+      ['--syntax-comment', '--kw-comment'],
+    ]
+    for (const [v2k, pk] of pairs) {
+      assert.equal(normColor(dark[v2k]), normColor(srcD[pk]), `${p.name}/dark ${v2k}`)
+      assert.equal(normColor(root[v2k]), normColor(srcL[pk]), `${p.name}/light ${v2k}`)
+    }
+    // 标点 token 的 v1 默认值是 var(--color-text-3)；v2 导出必须解析成真实颜色，
+    // 否则会把 v1 --color-* 变量泄漏进 v2 命名空间并吞掉 base 缺省。
+    assert.equal(dark['--syntax-punctuation'], normColor(srcD['--color-text-3']), `${p.name}/dark 标点已解析`)
+    assert.equal(root['--syntax-punctuation'], normColor(srcL['--color-text-3']), `${p.name}/light 标点已解析`)
+    // hljs 语法块实际存在
+    assert.match(css, /\.hljs-keyword/, `${p.name} 缺 hljs-keyword 规则`)
+    assert.match(css, /var\(--syntax-keyword\)/, `${p.name} 语法块未绑定 --syntax-keyword`)
   }
 })
 
