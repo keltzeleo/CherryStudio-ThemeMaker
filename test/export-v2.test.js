@@ -40,15 +40,19 @@ test('CHERRY_V1 保持默认，CHERRY_V2 常量正确', () => {
   assert.match(buildPresetCss(PRESETS[0]), /body\[theme-mode="dark"\]/)
 })
 
-test('v2 导出用的是 Tailwind / shadcn 命名空间（:root / .dark），不是 v1 body[theme-mode]', () => {
+test('v2 导出用 Tailwind / shadcn 命名空间且用高特异度选择器（:root:root / :root.dark），不是 v1 body[theme-mode]', () => {
   const css = v2(PRESETS[0])
-  assert.match(css, /^\s*:root \{/m)
-  assert.match(css, /^\s*\.dark \{/m)
+  assert.match(css, /^\s*:root:root \{/m)
+  assert.match(css, /^\s*:root\.dark \{/m)
   assert.ok(!css.includes('body[theme-mode'), '不得出现 v1 官方选择器')
-  assert.ok(!/--color-[a-z-]+/.test(css), '不得泄漏 v1 --color-* 变量')
+  assert.ok(!/^:root \{/m.test(css), '不得出现 0,1,0 的裸 :root 块（可能被宿主覆盖）')
+  assert.ok(!/^\.dark \{/m.test(css), '不得出现 0,1,0 的裸 .dark 块（可能被宿主覆盖）')
+  assert.ok(!/--color-text(?:-2|-3)?\s*:/.test(css), '不得泄漏 v1 --color-text 系列变量')
   assert.ok(!css.includes('--chat-background-user'), '不得泄漏 v1 chat 变量')
   assert.ok(!css.includes('--content-bgcolor'), '不得泄漏 v1 幽灵变量 --content-bgcolor')
   assert.ok(!css.includes('--chat-background-ai'), '不得泄漏预览专用 --chat-background-ai')
+  assert.ok(!/--color-background-(?:soft|mute|deep)\s*:/.test(css), '不得泄漏 v1 --color-background-{soft,mute,deep}（v2 用 --color-background/--color-card）')
+  assert.ok(!/--color-black-mute\s*:/.test(css), '不得泄漏 v1 --color-black-mute')
 })
 
 test('v2 导出不触碰宿主持有的 --cs-theme-primary*（不与之冲突）', () => {
@@ -56,10 +60,50 @@ test('v2 导出不触碰宿主持有的 --cs-theme-primary*（不与之冲突）
   assert.ok(!/--cs-theme-primary\s*:/.test(css), '主题不得声明宿主拥有的 --cs-theme-primary*')
 })
 
+test('v2 导出包含 --color-* 公共契约层（Tailwind v4 / shadcn 组件实际读取），值来自预览，这是「贴了才有效」的关键', () => {
+  const css = v2(PRESETS[0])
+  const root = parseVars(extractBlock(css, ':root:root') || '')
+  const dark = parseVars(extractBlock(css, ':root.dark') || '')
+  const contract = [
+    '--color-background', '--color-background-subtle', '--color-foreground',
+    '--color-foreground-secondary', '--color-foreground-muted', '--color-card',
+    '--color-card-foreground', '--color-popover', '--color-popover-foreground',
+    '--color-primary', '--color-primary-foreground', '--color-primary-hover',
+    '--color-primary-soft', '--color-primary-mute',
+    '--color-secondary', '--color-secondary-foreground', '--color-secondary-hover',
+    '--color-secondary-active', '--color-muted', '--color-muted-foreground',
+    '--color-accent', '--color-accent-foreground',
+    '--color-ghost-hover', '--color-ghost-active',
+    '--color-border', '--color-border-subtle', '--color-border-hover', '--color-border-active',
+    '--color-frame-border', '--color-input', '--color-input-background', '--color-ring',
+    '--color-sidebar', '--color-sidebar-foreground', '--color-sidebar-primary',
+    '--color-sidebar-primary-foreground', '--color-sidebar-accent',
+    '--color-sidebar-accent-foreground', '--color-sidebar-border', '--color-sidebar-ring',
+  ]
+  for (const k of contract) {
+    assert.ok(k in root, `light :root 缺 ${k}`)
+    assert.ok(k in dark, `dark .dark 缺 ${k}`)
+  }
+  // 与预览同源
+  const srcD = buildVars(presetPlan(PRESETS[0], 'dark'), PRESETS[0].glow)
+  const srcL = buildVars(presetPlan(PRESETS[0], 'light'), PRESETS[0].glow)
+  assert.equal(normColor(dark['--color-primary']), normColor(srcD['--color-primary']), 'color-primary dark')
+  assert.equal(normColor(root['--color-primary']), normColor(srcL['--color-primary']), 'color-primary light')
+  assert.equal(normColor(dark['--color-background']), normColor(srcD['--color-background']), 'color-background dark')
+  assert.equal(normColor(root['--color-background']), normColor(srcL['--color-background']), 'color-background light')
+  assert.equal(normColor(dark['--color-input-background']), normColor(srcD['--local-input-bg']), 'color-input-background dark = 预览输入栏底')
+  assert.equal(normColor(root['--color-input-background']), normColor(srcL['--local-input-bg']), 'color-input-background light = 预览输入栏底')
+  // 输入栏底必须是不透明软表面（不是 near-transparent AI 气泡染色），否则输入栏半透明/发灰
+  const { a: aD } = parseColor(dark['--color-input-background'])
+  const { a: aL } = parseColor(root['--color-input-background'])
+  assert.ok(aD > 0.5, `dark 输入栏底 alpha 应 >0.5，实际 ${aD}`)
+  assert.ok(aL > 0.5, `light 输入栏底 alpha 应 >0.5，实际 ${aL}`)
+})
+
 test('v2 完整包含 shadcn 官方 + Cherry product 语义 token（dark/light 两块都有）', () => {
   const css = v2(PRESETS[0])
-  const root = parseVars(extractBlock(css, ':root') || '')
-  const dark = parseVars(extractBlock(css, '.dark') || '')
+  const root = parseVars(extractBlock(css, ':root:root') || '')
+  const dark = parseVars(extractBlock(css, ':root.dark') || '')
   const shadcn = [
     '--background', '--foreground', '--card', '--card-foreground',
     '--popover', '--popover-foreground', '--sidebar', '--sidebar-foreground',
@@ -72,8 +116,6 @@ test('v2 完整包含 shadcn 官方 + Cherry product 语义 token（dark/light �
     '--code-block', '--inline-code', '--inline-code-foreground',
     '--reference', '--reference-foreground', '--reference-subtle',
     '--highlight', '--highlight-accent', '--chat-user',
-    '--syntax-keyword', '--syntax-string', '--syntax-literal',
-    '--syntax-function', '--syntax-comment', '--syntax-punctuation',
   ]
   for (const k of [...shadcn, ...product]) {
     assert.ok(k in root, `light :root 缺 ${k}`)
@@ -83,8 +125,8 @@ test('v2 完整包含 shadcn 官方 + Cherry product 语义 token（dark/light �
 
 test('v2 输出 v2.0.9 的 --cs-* palette 命名空间（layer 1，全覆盖的关键），dark/light 都有且与预览同源', () => {
   const css = v2(PRESETS[0])
-  const root = parseVars(extractBlock(css, ':root') || '')
-  const dark = parseVars(extractBlock(css, '.dark') || '')
+  const root = parseVars(extractBlock(css, ':root:root') || '')
+  const dark = parseVars(extractBlock(css, ':root.dark') || '')
   const palette = [
     '--cs-background', '--cs-background-subtle', '--cs-foreground',
     '--cs-muted-foreground', '--cs-foreground-tertiary', '--cs-foreground-disabled',
@@ -124,8 +166,8 @@ test('v2 输出 v2.0.9 的 --cs-* palette 命名空间（layer 1，全覆盖的�
 test('v2 dark/light 背景、border、chat-user、link、primary 各不相同且与预览同源', () => {
   for (const p of PRESETS) {
     const css = v2(p)
-    const root = parseVars(extractBlock(css, ':root') || '')
-    const dark = parseVars(extractBlock(css, '.dark') || '')
+    const root = parseVars(extractBlock(css, ':root:root') || '')
+    const dark = parseVars(extractBlock(css, ':root.dark') || '')
     const srcD = buildVars(presetPlan(p, 'dark'), p.glow)
     const srcL = buildVars(presetPlan(p, 'light'), p.glow)
     for (const [mode, src, block] of [['dark', srcD, dark], ['light', srcL, root]]) {
@@ -149,8 +191,8 @@ test('v2 --primary-foreground 遵循 Cherry 相对亮度阈值（>0.179 → #000
   }
   for (const p of PRESETS) {
     const css = v2(p)
-    const root = parseVars(extractBlock(css, ':root') || '')
-    const dark = parseVars(extractBlock(css, '.dark') || '')
+    const root = parseVars(extractBlock(css, ':root:root') || '')
+    const dark = parseVars(extractBlock(css, ':root.dark') || '')
     for (const [mode, block] of [['dark', dark], ['light', root]]) {
       const accent = block['--primary']
       const expect = lumin(accent) > 0.179 ? '#000000' : '#FFFFFF'
@@ -159,16 +201,16 @@ test('v2 --primary-foreground 遵循 Cherry 相对亮度阈值（>0.179 → #000
   }
 })
 
-test('v2 导出 .dark 块排在 :root 之后（等特异度下暗色获胜）', () => {
+test('v2 导出暗色块（:root.dark）排在亮色块（:root:root）之后（同特异度下暗色获胜）', () => {
   const css = v2(PRESETS[0])
-  assert.ok(css.indexOf(':root') < css.indexOf('.dark'), '.dark 必须出现在 :root 之后')
+  assert.ok(css.indexOf(':root:root') < css.indexOf(':root.dark'), ':root.dark 必须出现在 :root:root 之后')
 })
 
 test('v2 每预设 dark/light 两块都有 --sidebar 且跟随预览 --sidebar', () => {
   for (const p of PRESETS) {
     const css = v2(p)
-    const root = parseVars(extractBlock(css, ':root') || '')
-    const dark = parseVars(extractBlock(css, '.dark') || '')
+    const root = parseVars(extractBlock(css, ':root:root') || '')
+    const dark = parseVars(extractBlock(css, ':root.dark') || '')
     const srcD = buildVars(presetPlan(p, 'dark'), p.glow)
     const srcL = buildVars(presetPlan(p, 'light'), p.glow)
     assert.equal(normColor(dark['--sidebar']), normColor(srcD['--sidebar']), `${p.name}/dark sidebar`)
@@ -176,33 +218,33 @@ test('v2 每预设 dark/light 两块都有 --sidebar 且跟随预览 --sidebar',
   }
 })
 
-test('v2 --inline-code 取自预览 muted 底（非 inputBg），hljs 语法块存在且绑定 --syntax-*', () => {
+test('v2 --inline-code 取自预览 muted 底（非 inputBg）；语法高亮是 Shiki（无 --syntax-*、无 .hljs-*）', () => {
   for (const p of PRESETS) {
     const css = v2(p)
-    const root = parseVars(extractBlock(css, ':root') || '')
-    const dark = parseVars(extractBlock(css, '.dark') || '')
+    const root = parseVars(extractBlock(css, ':root:root') || '')
+    const dark = parseVars(extractBlock(css, ':root.dark') || '')
     const srcD = buildVars(presetPlan(p, 'dark'), p.glow)
     const srcL = buildVars(presetPlan(p, 'light'), p.glow)
     // inline-code 是行内 code 的底 → 预览的 --color-background-mute，而非输入栏底
     assert.equal(normColor(dark['--inline-code']), normColor(srcD['--color-background-mute']), `${p.name}/dark inline-code`)
     assert.equal(normColor(root['--inline-code']), normColor(srcL['--color-background-mute']), `${p.name}/light inline-code`)
-    // 语法 token 与预览同源
-    const pairs = [
-      ['--syntax-keyword', '--kw-keyword'], ['--syntax-string', '--kw-string'],
-      ['--syntax-literal', '--kw-literal'], ['--syntax-function', '--kw-name'],
-      ['--syntax-comment', '--kw-comment'],
-    ]
-    for (const [v2k, pk] of pairs) {
-      assert.equal(normColor(dark[v2k]), normColor(srcD[pk]), `${p.name}/dark ${v2k}`)
-      assert.equal(normColor(root[v2k]), normColor(srcL[pk]), `${p.name}/light ${v2k}`)
-    }
-    // 标点 token 的 v1 默认值是 var(--color-text-3)；v2 导出必须解析成真实颜色，
-    // 否则会把 v1 --color-* 变量泄漏进 v2 命名空间并吞掉 base 缺省。
-    assert.equal(dark['--syntax-punctuation'], normColor(srcD['--color-text-3']), `${p.name}/dark 标点已解析`)
-    assert.equal(root['--syntax-punctuation'], normColor(srcL['--color-text-3']), `${p.name}/light 标点已解析`)
-    // hljs 语法块实际存在
-    assert.match(css, /\.hljs-keyword/, `${p.name} 缺 hljs-keyword 规则`)
-    assert.match(css, /var\(--syntax-keyword\)/, `${p.name} 语法块未绑定 --syntax-keyword`)
+    // inline-code 文字色与预览 keyword 同源（v2 真实 token --inline-code-foreground）
+    assert.equal(normColor(dark['--inline-code-foreground']), normColor(srcD['--kw-keyword']), `${p.name}/dark inline-code-foreground`)
+    assert.equal(normColor(root['--inline-code-foreground']), normColor(srcL['--kw-keyword']), `${p.name}/light inline-code-foreground`)
+    // v2.0.9 用 Shiki 内联样式着色 token，既无 --syntax-* token，也无 .hljs-* 类
+    assert.ok(!/--syntax-[a-z-]+\s*:/.test(css), `${p.name} 不应输出 --syntax-* token`)
+    assert.ok(!css.includes('.hljs-'), `${p.name} 不应残留 .hljs-* 死代码`)
+    // 代码块底仍通过 --code-block + .shiki / [data-ui="chat.markdown"] pre 绑定
+    assert.match(css, /\.shiki/, `${p.name} 缺 .shiki 代码块规则`)
+    assert.match(css, /\[data-ui="chat\.markdown"\] pre/, `${p.name} 缺 markdown 代码块结构选择器`)
+  }
+})
+
+test('v2 用户气泡默认布局（bg-muted）由结构选择器重定向到 --chat-user', () => {
+  for (const p of PRESETS) {
+    const css = v2(p)
+    assert.match(css, /\[data-ui="chat\.user-bubble-message"\] \.message-content-container/, `${p.name} 缺用户气泡结构选择器`)
+    assert.match(css, /background-color: var\(--chat-user\) !important/, `${p.name} 用户气泡未绑定 --chat-user`)
   }
 })
 

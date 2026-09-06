@@ -61,8 +61,8 @@ describe('Theme Station 交互层', () => {
     fireEvent.click(v2Btn)
     expect(v2Btn.classList.contains('on')).toBe(true)
     expect(v1Btn.classList.contains('on')).toBe(false)
-    // 导出目标与 buildPresetCss 的 v2 分组行为一致（干净切换：v1 分层 / v2 :root+.dark）
-    expect(buildPresetCss({ bg: '#2b2b2b' }, CHERRY_V2_TARGET)).toMatch(/\n:root \{/)
+    // 导出目标与 buildPresetCss 的 v2 分组行为一致（干净切换：v1 分层 / v2 高特异度 :root:root+:root.dark）
+    expect(buildPresetCss({ bg: '#2b2b2b' }, CHERRY_V2_TARGET)).toMatch(/^\s*:root:root \{/m)
     expect(buildPresetCss({ bg: '#2b2b2b' }, CHERRY_V1_TARGET)).toMatch(/body\[theme-mode="dark"\]/)
   })
 
