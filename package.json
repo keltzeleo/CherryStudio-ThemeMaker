@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "node --test",
+    "test": "node --test \"test/**/*.test.js\"",
     "test:ui": "NODE_ENV=test vitest run",
     "test:all": "npm run test && npm run test:ui",
     "preview": "vite preview"

@@ -17,3 +17,7 @@ npm-debug.log*
 # editor
 .vscode/
 .idea/
+
+# unrelated stray project dropped inside the workspace (own git repo) — pollutes
+# recursive `node --test` and `eslint .` (imports an uninstalled eslint-config-next)
+agent-browser/

@@ -234,9 +234,9 @@ test('v2 --inline-code 取自预览 muted 底（非 inputBg）；语法高亮是
     // v2.0.9 用 Shiki 内联样式着色 token，既无 --syntax-* token，也无 .hljs-* 类
     assert.ok(!/--syntax-[a-z-]+\s*:/.test(css), `${p.name} 不应输出 --syntax-* token`)
     assert.ok(!css.includes('.hljs-'), `${p.name} 不应残留 .hljs-* 死代码`)
-    // 代码块底仍通过 --code-block + .shiki / [data-ui="chat.markdown"] pre 绑定
+    // 代码块底仍通过 --code-block + .shiki / .markdown pre 绑定
     assert.match(css, /\.shiki/, `${p.name} 缺 .shiki 代码块规则`)
-    assert.match(css, /\[data-ui="chat\.markdown"\] pre/, `${p.name} 缺 markdown 代码块结构选择器`)
+    assert.match(css, /\.markdown pre/, `${p.name} 缺 markdown 代码块结构选择器`)
   }
 })
 
@@ -254,10 +254,10 @@ test('v2 导出保留标志性 sidebar glow（.sidebar-theme 四阶 opacity，�
   for (const p of PRESETS) {
     const css = v2(p)
     // light 块
-    const ltBlock = extractBlock(css, '.sidebar-theme')
-    const dkBlock = extractBlock(css, '.dark .sidebar-theme')
-    assert.ok(ltBlock, `${p.name} 缺 .sidebar-theme glow 块`)
-    assert.ok(dkBlock, `${p.name} 缺 .dark .sidebar-theme glow 块`)
+    const ltBlock = extractBlock(css, 'html .sidebar-theme')
+    const dkBlock = extractBlock(css, 'html.dark .sidebar-theme')
+    assert.ok(ltBlock, `${p.name} 缺 html .sidebar-theme glow 块`)
+    assert.ok(dkBlock, `${p.name} 缺 html.dark .sidebar-theme glow 块`)
     const ltVars = parseVars(ltBlock || '')
     const dkVars = parseVars(dkBlock || '')
     for (const k of TOKENS) {
