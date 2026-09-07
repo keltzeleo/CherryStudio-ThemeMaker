@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { PRESETS, DEFAULT_GLOW } from './theme/presets.js'
-import { ZONES, VAR_LINKS } from './theme/zones.js'
+import { ZONES, VAR_LINKS, V2_UNSUPPORTED_ZONES } from './theme/zones.js'
 import { VAR_KEYS, varsToPlan, presetPlan, buildVars, buildPresetCss } from './theme/themeModel.js'
 import { CHERRY_V1_TARGET, CHERRY_V2_TARGET } from './theme/exportV2.js'
 import { hexA, toHex, linkHoverOf, convertColor, varKind, thinkingOf } from './utils/colors.js'
@@ -128,6 +128,7 @@ function App() {
   const presetsRef = useRef(PRESETS)
   const selNameRef = useRef('Kel Meow')
   const modeRef = useRef('dark')
+  const exportTargetRef = useRef(CHERRY_V1_TARGET)
   const draftRef = useRef(false)
   const syncRef = useRef(true)
   const baseRef = useRef(null)
@@ -152,6 +153,7 @@ function App() {
   useEffect(() => { presetsRef.current = presets })
   useEffect(() => { selNameRef.current = selName })
   useEffect(() => { modeRef.current = mode })
+  useEffect(() => { exportTargetRef.current = exportTarget })
   useEffect(() => { draftRef.current = draft })
   useEffect(() => { syncRef.current = sync })
   useEffect(() => { inPlaceRef.current = inPlace })
@@ -667,6 +669,10 @@ function App() {
         const isAccentInput = !!e.target.closest('.accent-ball input[type="color"]')
         e.stopPropagation()
         if (!isAccentInput) e.preventDefault()
+        if (exportTargetRef.current === CHERRY_V2_TARGET && V2_UNSUPPORTED_ZONES.has(hit.id)) {
+          toast('v2.0.9 不支持此颜色 · 代码语法色由 Cherry Studio 内置 Shiki 主题决定，CSS 无法覆盖')
+          return
+        }
         if (popoverRef.current && selElRef.current === hit.el) closePopover()
         else openPopover(hit, e.clientX, e.clientY)
       } else if (!e.target.closest('#popover')) {
@@ -891,8 +897,8 @@ function App() {
                       <div className="th"><svg viewBox="0 0 24 24"><path d="M9 18l-6 3 2-7L1 6l6 2 5-5 3 5 7-2-4 7 4 7-7-2-5 5z" /></svg>深度思考</div>
                       <div>用户要的是「换色工具」，体验必须是所见即所得。预览应该可信、是主角，而不是被控件挤到一边。要把颜色控制从常驻面板里解放出来。</div>
                     </div>
-                    <div className="code">
-                      <div className="ch pz" data-zone="codehead"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z" /><path d="m9 10-2 2 2 2M15 10l2 2-2 2" /></svg>theme.palette.js</div>
+                    <div className={'code' + (exportTarget === CHERRY_V2_TARGET ? ' kw-locked' : '')}>
+                      <div className="ch pz" data-zone="codehead"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z" /><path d="m9 10-2 2 2 2M15 10l2 2-2 2" /></svg>theme.palette.js{exportTarget === CHERRY_V2_TARGET && <span className="kw-locked-badge" title="v2.0.9 不支持自定义语法色，由 Cherry Studio 内置 Shiki 主题决定">语法色 · v2 不生效</span>}</div>
                       <pre className="pz" data-zone="codebody">{CODE_LINES}</pre>
                     </div>
                     <div className="quote pz" data-zone="quote">好的设计应该是「一眼可信」，而不是「需要解释」——用户信任它，才敢放心改。</div>

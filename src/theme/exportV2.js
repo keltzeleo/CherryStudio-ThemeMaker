@@ -1,38 +1,76 @@
 /**
- * exportV2 — Cherry Studio v2.0.9 (Tailwind / shadcn) exporter.
+ * exportV2 — Cherry Studio v2.0.9 (Tailwind v4 + shadcn) exporter.
  *
- * v2.0.9 moved from the v1 `--color-*` namespace to a THREE-layer token model:
- *   1. a `--cs-*` palette namespace (`--cs-background`, `--cs-primary`,
- *      `--cs-card`, `--cs-border`, `--cs-sidebar`, `--cs-input`, `--cs-accent`,
- *      `--cs-muted`, `--cs-popover`, `--cs-foreground` …) — the single source of
- *      truth the app derives everything from;
- *   2. bare shadcn aliases (`--background`, `--card`, `--primary`, `--border` …)
- *      built as `var(--cs-*)`;
- *   3. Cherry product semantics (`--background-subtle`, `--link`, `--code-block`,
- *      `--reference`, `--highlight`, `--chat-user`, `--resource-list-row-*` …).
- * The host applies the accent through `--cs-theme-primary` /
- * `--cs-theme-primary-foreground` written INLINE on `<html>` (left untouched),
- * and dark mode is a `.dark` class on `<html>`/`<body>`.
+ * v2.0.9 has a FOUR-layer token model (verified against the real renderer
+ * bundle `client-*.css`):
+ *   1. `--cs-*` — the design-token palette namespace (`--cs-background`,
+ *      `--cs-card`, `--cs-primary`, `--cs-border`, `--cs-input`, …). The app
+ *      defines these in `:root` (light) / `.dark` (dark).
+ *   2. bare shadcn aliases (`--background`, `--card`, `--primary`,
+ *      `--foreground`, `--muted`, `--border`, `--input`, `--ring`, `--sidebar`
+ *      …) — the app maps them in `:root` / `.dark` as
+ *      `--card: var(--cs-card)`, `--background: var(--cs-background)`, etc.
+ *      **These bare aliases are what the component utilities ACTUALLY read:**
+ *      `.bg-card { background-color: var(--card) }`,
+ *      `.text-foreground { color: var(--foreground) }`,
+ *      `.border-border { border-color: var(--border) }`, …
+ *   3. `--color-*` — Tailwind v4 `@theme` declarations. The app declares ONLY
+ *      `--color-primary: var(--primary)` and `--color-border: var(--border)`,
+ *      and NO component reads `var(--color-primary)` / `var(--color-card)` /
+ *      `var(--color-background)` … (0 usages in the bundle). This layer does
+ *      NOT drive rendering in v2.0.9 — we emit it only for symmetry /
+ *      forward-compat, so its values are literal but non-authoritative.
+ *   4. Cherry product semantics (`--background-subtle`, `--link`, `--code-block`,
+ *      `--reference`, `--highlight`, `--chat-user`, `--resource-list-row-*`) —
+ *      the unprefixed product namespace. (v2.0.9 syntax highlighting is Shiki
+ *      with inline-styled tokens, so there are NO `--syntax-*` tokens.)
  *
- * A custom theme MUST override layer 1 (`--cs-*`) so layers 2/3 pick it up,
- * AND write the bare aliases + product semantics directly so consumers reading
- * those tokens directly are themed too. Overriding ONLY the bare shadcn aliases
- * (as a naive theme would) leaves every `--cs-*`-backed surface at app
- * defaults, which is why coverage looks inconsistent.
+ * ACCENT (the critical path): the app maps `--primary: var(--cs-theme-primary)`
+ * — NOT `--cs-primary`. It also defines `--cs-theme-primary: var(--cs-primary)`,
+ * but the HOST writes `--cs-theme-primary` / `--cs-theme-primary-foreground`
+ * INLINE on `<html>` (e.g. `rgb(0,185,107)`). Inline style beats every
+ * stylesheet rule, so `--cs-theme-primary` stays green no matter what
+ * `--cs-primary` we emit. The ONLY way to theme the accent is to emit the BARE
+ * `--primary` (and `--primary-foreground`) as a LITERAL at boosted specificity
+ * (`:root:root` / `:root.dark`, 0,2,0), which outranks the app's
+ * `:root { --primary: var(--cs-theme-primary) }` (0,1,0). We still emit
+ * `--cs-primary` so `--cs-*` consumers resolve to our accent when the host does
+ * NOT inject an inline accent. We never declare the host-owned `--cs-theme-*`
+ * ourselves.
  *
- * The theme competes with the app base purely by source order: our `:root` /
- * `.dark` blocks are emitted later than the app's own, so on equal specificity
- * they win. Because the app's `--primary` is `var(--cs-theme-primary)` and the
- * host writes `--cs-theme-primary*` INLINE on `<html>`, we must ALSO emit the
- * bare `--primary` / `--primary-foreground` directly (our later `:root` block
- * outranks the app's `:root { --primary: var(--cs-theme-primary) }`). We never
- * declare the host-owned `--cs-theme-primary*` ourselves.
+ * SPECIFICITY: the theme beats the app base via specificity, not source order
+ * (the injection position is not guaranteed). `.dark` sits ON `<html>` (the
+ * `:root` element), so we emit light as `:root:root` and dark as `:root.dark`
+ * (both 0,2,0 > base 0,1,0); `:root:root` precedes `:root.dark` so dark wins by
+ * source order inside our own file.
+ *
+ * REAL-MACHINE COVERAGE (verified against the app.asar bundle, not docs):
+ *  - The user bubble already follows the accent-adjacent `--chat-user` token:
+ *    `.message.message-user .message-content-container` is Tailwind `bg-muted`
+ *    (→ `--muted`), so the emitted `--chat-user` is NOT read there — we re-route
+ *    it via the `[data-ui="chat.user-bubble-message"]` rule below. AI bubbles
+ *    (`.message-assistant`) are natively transparent, no override needed.
+ *  - The input bar `.inputbar-container` reads Tailwind `bg-card`/`border-border`
+ *    (→ `--card`/`--border`), NOT `--input`/`--input-background` — confirmed via
+ *    live DOM ancestor-chain probe. We re-route it via the `.inputbar-container`
+ *    penetration below so the exported `--input*` tokens (otherwise unread)
+ *    reach it.
+ *  - Table th/td/hover: v2.0.9's `.markdown table` markup has no `--table-*`
+ *    tokens of its own, so `thead th` / `tbody td` / `tbody tr:hover td` need
+ *    explicit penetration (below) — otherwise the preview's table header/row/
+ *    hover colors are silently dropped on export. `chat.table` is a SCROLL
+ *    CONTAINER, not a `<table>` markup penetration entry point — the
+ *    `.markdown table` rules are the only table surface.
+ *  - `data-ui` is a MULTI-VALUE attribute (`data-ui="ui.sidebar ui.sidebar-list"`
+ *    …); attribute selectors must use `~=` (e.g. `[data-ui~="ui.sidebar"]`), not
+ *    `=`. The chat list is VIRTUALIZED — off-screen DOM is unmounted, so
+ *    selectors must not assume every row/node is present in the DOM at once.
  *
  * We read EXACTLY the same `fieldsOf(buildVars(...))` values the preview area
  * renders, so 「所见 == 所得」 holds for v2 too.
  */
 import { parseColor } from '../utils/colorUtils.js'
-import { hexA } from '../utils/colors.js'
+import { hexA, darken } from '../utils/colors.js'
 
 export const CHERRY_V1_TARGET = 'v1.9.12'
 export const CHERRY_V2_TARGET = 'v2.0.9'
@@ -64,12 +102,13 @@ function tokenBlock(selector, pairs) {
 
 // Map one mode's preview fields → the v2.0.9 token surface.
 //
-// v2.0.9 has a THREE-layer model:
-//   1. `--cs-*` palette namespace (--cs-background/primary/border/card/sidebar/
+// v2.0.9 has a FOUR-layer model:
+//   1. `--color-*` public contract (what Tailwind v4 / shadcn utilities read).
+//   2. `--cs-*` palette namespace (--cs-background/primary/border/card/sidebar/
 //      input/accent/muted/popover/foreground…) — the SINGLE source of truth the
-//      app derives everything from.
-//   2. bare shadcn aliases built as `var(--cs-*)` (--background, --card, --primary…).
-//   3. Cherry product semantics (--background-subtle, --link, --code-block,
+//      app derives the other layers from.
+//   3. bare shadcn aliases built as `var(--cs-*)` (--background, --card, --primary…).
+//   4. Cherry product semantics (--background-subtle, --link, --code-block,
 //      --reference, --highlight, --chat-user, --resource-list-row-*…): the
 //      unprefixed PUBLIC namespace. In the app's product.css these mostly read
 //      `var(--cs-*)`, but `--code-block`/`--chat-user` are literal colors and
@@ -77,15 +116,71 @@ function tokenBlock(selector, pairs) {
 //      unprefixed (never `--cs-link`/`--cs-code-block`/`--cs-chat-user`) so we
 //      override the public aliases directly.
 //
-// A custom theme MUST override layer 1 (`--cs-*`) so layer 2/3 pick it up, AND
+// A custom theme MUST override layer 2 (`--cs-*`) so layers 3/4 pick it up, AND
 // the bare aliases + product semantics directly (so consumers reading them
 // directly are themed too). Setting ONLY bare aliases (the old behaviour) leaks
 // app defaults for any surface reading `--cs-*` → inconsistent coverage.
+//
+// CRITICAL for v2.0.9: the app is Tailwind v4 + shadcn, but its utilities read the
+// BARE aliases (`.bg-card → var(--card)`, `.bg-primary → var(--primary)`,
+// `.text-foreground → var(--foreground)` …), NOT `--color-*`. The bare aliases are
+// mapped in `:root`/`.dark` from `--cs-*` (e.g. `--card: var(--cs-card)`), except
+// `--primary: var(--cs-theme-primary)`. The host writes `--cs-theme-primary*`
+// INLINE on <html>, so `--cs-primary` alone can never reach `--primary`. Therefore
+// the bare `--primary`/`--primary-foreground` MUST be emitted as LITERALS (boosted
+// specificity) — that is what actually overrides the accent. We ALSO emit `--cs-*`
+// (so bare aliases and direct `--cs-*` consumers resolve to our values when the
+// host doesn't inject an inline accent) plus the bare aliases + product semantics
+// as literals. The `--color-*` layer is emitted for symmetry/forward-compat but is
+// NOT what renders v2.0.9 — skipping the BARE aliases is the #1 reason a pasted
+// theme "has no effect".
 function v2Tokens(f) {
   const primary = f.primary
   const fg = foregroundOf(primary)
+  const primaryHover = darken(primary, 0.08)
   return [
-    // ── Layer 1 · `--cs-*` palette namespace (everything derives from this) ──
+    // ── Layer 1 · `--color-*` public contract (shadcn / Tailwind v4 utilities) ──
+    ['--color-background', f.bg],
+    ['--color-background-subtle', f.soft],
+    ['--color-foreground', f.text],
+    ['--color-foreground-secondary', f.text2],
+    ['--color-foreground-muted', f.text3],
+    ['--color-card', f.soft],
+    ['--color-card-foreground', f.text],
+    ['--color-popover', f.bg],
+    ['--color-popover-foreground', f.text],
+    ['--color-primary', primary],
+    ['--color-primary-foreground', fg],
+    ['--color-primary-hover', primaryHover],
+    ['--color-primary-soft', hexA(primary, 0.6)],
+    ['--color-primary-mute', hexA(primary, 0.3)],
+    ['--color-secondary', f.soft],
+    ['--color-secondary-foreground', f.text],
+    ['--color-secondary-hover', f.hover],
+    ['--color-secondary-active', f.active],
+    ['--color-muted', f.soft],
+    ['--color-muted-foreground', f.text3],
+    ['--color-accent', f.hover],
+    ['--color-accent-foreground', f.text],
+    ['--color-ghost-hover', f.hover],
+    ['--color-ghost-active', f.active],
+    ['--color-border', f.border],
+    ['--color-border-subtle', f.borderSoft],
+    ['--color-border-hover', f.active],
+    ['--color-border-active', f.active],
+    ['--color-frame-border', f.border],
+    ['--color-input', f.inputBorder],
+    ['--color-input-background', f.inputBg],
+    ['--color-ring', primary],
+    ['--color-sidebar', f.sidebar],
+    ['--color-sidebar-foreground', f.text],
+    ['--color-sidebar-primary', primary],
+    ['--color-sidebar-primary-foreground', fg],
+    ['--color-sidebar-accent', f.active],
+    ['--color-sidebar-accent-foreground', f.text],
+    ['--color-sidebar-border', f.border],
+    ['--color-sidebar-ring', primary],
+    // ── Layer 2 · `--cs-*` palette namespace (design-token source of truth) ──
     ['--cs-background', f.bg],
     ['--cs-background-subtle', f.soft],
     ['--cs-foreground', f.text],
@@ -105,12 +200,13 @@ function v2Tokens(f) {
     ['--cs-muted', f.soft],
     ['--cs-accent', f.hover],
     ['--cs-accent-foreground', f.text],
-    ['--cs-ghost-active', f.hover],
+    ['--cs-ghost-active', f.active],
     ['--cs-border', f.border],
     ['--cs-border-subtle', f.borderSoft],
     ['--cs-border-strong', f.border],
     ['--cs-border-selected', f.active],
     ['--cs-input', f.inputBorder],
+    ['--cs-input-background', f.inputBg],
     ['--cs-ring', primary],
     ['--cs-sidebar', f.sidebar],
     ['--cs-sidebar-foreground', f.text],
@@ -120,7 +216,7 @@ function v2Tokens(f) {
     ['--cs-sidebar-accent-foreground', f.text],
     ['--cs-sidebar-border', f.border],
     ['--cs-sidebar-ring', primary],
-    // ── Layer 2 · bare shadcn aliases (mirror the app's var(--cs-*) mapping) ──
+    // ── Layer 3 · bare shadcn aliases (mirror the app's var(--cs-*) mapping) ──
     ['--background', f.bg],
     ['--foreground', f.text],
     ['--card', f.soft],
@@ -137,6 +233,7 @@ function v2Tokens(f) {
     ['--accent-foreground', f.text],
     ['--border', f.border],
     ['--input', f.inputBorder],
+    ['--input-background', f.inputBg],
     ['--ring', primary],
     ['--sidebar', f.sidebar],
     ['--sidebar-foreground', f.text],
@@ -146,7 +243,7 @@ function v2Tokens(f) {
     ['--sidebar-accent-foreground', f.text],
     ['--sidebar-border', f.border],
     ['--sidebar-ring', primary],
-    // ── Layer 3 · Cherry product semantics (some read --cs-*, some literal) ──
+    // ── Layer 4 · Cherry product semantics (some read --cs-*, some literal) ──
     ['--background-subtle', f.soft],
     ['--border-subtle', f.borderSoft],
     ['--border-strong', f.border],
@@ -164,30 +261,31 @@ function v2Tokens(f) {
     ['--highlight-foreground', fg],
     ['--highlight-accent', hexA(primary, 0.3)],
     ['--chat-user', f.userBg],
-    ['--resource-list-row-hover', f.soft],
-    ['--resource-list-row-active', f.hover],
+    ['--table-header', f.tableHeader],
+    ['--table-header-text', f.tableHeaderText],
+    ['--table-border', f.tableBorder],
+    ['--table-row-bg', f.tableRow],
+    ['--table-row-hover', f.soft],
+    // The preview's own CSS proves the mapping (App.css): `.topic:hover` uses
+    // `--color-hover` (f.hover), `.topic.on` (the SELECTED conversation row)
+    // uses `--color-primary-soft` (hexA(primary, 0.6)) — an accent-tinted
+    // highlight, not a neutral wash. Mapping `-selected` to f.hover/f.soft
+    // (as before) produced a near-invisible 4–6% neutral tint that looked
+    // indistinguishable from the unselected state.
+    ['--resource-list-row-hover', f.hover],
+    ['--resource-list-row-active', f.active],
     ['--resource-list-row-active-foreground', f.text],
-    ['--resource-list-row-selected', f.hover],
+    ['--resource-list-row-selected', hexA(primary, 0.6)],
     ['--resource-list-row-selected-foreground', f.text],
-    // ── Syntax highlighting (Theme Station extension; hljs DOM classes are
-    //    cross-version, v2.0.9 defines no syntax tokens, so we theme them
-    //    directly via the same buildVars the preview renders) ──
-    ['--syntax-keyword', f.kwKeyword],
-    ['--syntax-string', f.kwString],
-    ['--syntax-literal', f.kwLiteral],
-    ['--syntax-function', f.kwName],
-    ['--syntax-comment', f.kwComment],
-    ['--syntax-punctuation', resolveVarRef(f.kwPunct, f.text3)],
+    // Confirmed via live DOM: v2.0.9 scrollbars read bare `--scrollbar-thumb` /
+    // `--scrollbar-thumb-hover` (Tailwind arbitrary-value `bg-[var(--scrollbar-thumb)]`
+    // on every `[&::-webkit-scrollbar-thumb]` utility — topic list, message list,
+    // composer, selector popovers). v1 used `--color-scrollbar-thumb*` (see
+    // tokenRegistry's officialKey) — v2 renamed it, and this file never emitted
+    // either form, so every scrollbar in the app was completely unthemed.
+    ['--scrollbar-thumb', f.scrollThumb],
+    ['--scrollbar-thumb-hover', f.scrollThumb],
   ]
-}
-
-// v1 default for --kw-punct is `var(--color-text-3)`; resolve any v1 var
-// reference to its resolved preview color so no v1 `--color-*` leaks into v2.
-function resolveVarRef(value, fallback) {
-  const m = /^var\((--[\w-]+)\)$/.exec((value || '').trim())
-  if (!m) return value
-  if (m[1] === '--color-text-3') return fallback
-  return value
 }
 
 /**
@@ -200,9 +298,19 @@ export function buildV2Css(dk, lt, meta = {}) {
   const radius = Number(meta.radius) || 12
   const name = meta.name || 'Theme Station'
 
-  // `:root` (light) must precede `.dark` so dark wins on equal specificity.
-  const lightBlock = tokenBlock(':root', [...v2Tokens(lt), ['--radius', `${radius}px`]])
-  const darkBlock = tokenBlock('.dark', [...v2Tokens(dk), ['--radius', `${radius}px`]])
+  // We emit EVERY token layer with boosted specificity so the theme wins
+  // regardless of injection order AND of the host's inline `--cs-theme-primary*`
+  // (which would otherwise shadow a plain `--cs-primary` override before it can
+  // reach `--primary: var(--cs-theme-primary)` — the bare alias the utilities
+  // actually read). Because `.dark` is applied ON `<html>` (the `:root` element),
+  // we boost specificity:
+  //   light → `:root:root`  (0,2,0)
+  //   dark  → `:root.dark`  (0,2,0)  (html.dark)
+  // both outrank the base `:root` / `.dark` (0,1,0). `:root:root` (light)
+  // precedes `:root.dark` (dark); equal specificity, so source order makes dark
+  // win inside our own file.
+  const lightBlock = tokenBlock(':root:root', [...v2Tokens(lt), ['--radius', `${radius}px`]])
+  const darkBlock = tokenBlock(':root.dark', [...v2Tokens(dk), ['--radius', `${radius}px`]])
 
   // Signature sidebar glow (Theme Station). v2.0.9 (Tailwind/shadcn) renders the
   // ACTIVE sidebar item's indicator with a 4-step opacity hierarchy emitted on the
@@ -230,28 +338,42 @@ export function buildV2Css(dk, lt, meta = {}) {
 
   return `/**
  * @name: Cherry Studio Custom Theme (${name} - ${CHERRY_V2_TARGET})
- * @description: Tailwind / shadcn v2.0.9 namespace. Overrides the un-prefixed
- * component tokens on :root (light) and .dark (dark) plus the sidebar's
- * .sidebar-theme --sidebar-* glow tokens; leaves the host-owned
- * --cs-theme-primary* inline primitives untouched. Values come from the same
- * buildVars resolution the Preview Area renders.
+ * @description: Tailwind v4 / shadcn v2.0.9 namespace. Emits the bare aliases
+ * (--background/--card/--primary/… — what the .bg-*/.text-*/… utilities actually
+ * read, and the only way to bypass the host's inline --cs-theme-primary*) plus
+ * the --cs-* palette and Cherry product semantics, all at boosted specificity
+ * (:root:root light / :root.dark dark) so the theme wins regardless of injection
+ * order. Adds the sidebar's .sidebar-theme --sidebar-* glow tokens. Values come
+ * from the same buildVars resolution the Preview Area renders.
  */
 
 ${lightBlock}
 
 ${darkBlock}
 
-/* ====== Signature sidebar glow (Theme Station) ====== */
-.sidebar-theme {
+/* ====== Signature sidebar glow (Theme Station) ======
+   Boosted to html-qualified selectors (0,1,1 > 0,0,1) so this wins on
+   specificity rather than relying on injection position, consistent with
+   the rest of this file's "we beat the base via specificity, not source
+   order" rule. */
+html .sidebar-theme {
 ${glowTokens(true)}
 }
-.dark .sidebar-theme {
+html.dark .sidebar-theme {
 ${glowTokens(false)}
 }
 /* ====== Markdown penetrations (read the v2 product tokens above; the v2 base
    CSS hard-codes some surfaces, so we re-route them to our tokens + source
    order — later block, equal specificity → wins). ====== */
-::selection { background-color: var(--accent) !important; color: var(--accent-foreground) !important; }
+::selection { background-color: var(--primary) !important; color: var(--primary-foreground) !important; }
+
+/* Input bar (v2 reads Tailwind bg-card/border-border on .inputbar-container,
+   not --input/--input-background — re-route so the preview's input fields
+   actually reach it). */
+.inputbar-container {
+  background-color: var(--input-background) !important;
+  border-color: var(--input) !important;
+}
 
 .markdown pre, .tiptap pre, .shiki, .prose pre {
   background-color: var(--code-block) !important;
@@ -268,32 +390,65 @@ ${glowTokens(false)}
   color: var(--inline-code-foreground) !important;
   border-radius: 6px !important;
 }
-.markdown blockquote, .markdown .markdown-alert {
+/* Blockquote — VERIFIED against Cherry's real markdown.css (v2.0.12):
+ * .markdown blockquote reads background-color: var(--markdown-content-background)
+ * (shared with th/inline-code/kbd — do NOT redefine that var globally, it'd
+ * recolor 7 unrelated surfaces), border-left: 2px solid var(--primary)
+ * (accent-tied, no independent hook), color: var(--muted-foreground). None of
+ * that is --reference* — those real tokens exist only for citation badges
+ * (.markdown sup[data-citation]). Since the preview treats the quote family
+ * as independently editable (not tied to accent/muted), we penetrate the
+ * individual properties (never the border-left shorthand, so we don't
+ * clobber its width/style) with our own --reference / --reference-foreground
+ * hook — this also (correctly) re-colors citation badges the same way, since
+ * those really do read --reference/--reference-foreground natively. */
+.markdown blockquote {
   background-color: var(--reference-subtle) !important;
-  border-left: 4px solid var(--reference) !important;
+  border-left-color: var(--reference) !important;
   color: var(--reference-foreground) !important;
 }
-.markdown blockquote { border-left-color: var(--reference) !important; }
+
+/* Table — VERIFIED against Cherry's real chat table renderer
+ * (Table.tsx: table style="border: 0.5px solid var(--border)", cells use
+ * Tailwind border-border-subtle + bg-muted on th; the legacy markdown.css
+ * fallback path independently agrees: .markdown th reads
+ * --markdown-content-background, .markdown th/td borders read
+ * --markdown-border-color, row hover reads --markdown-hover-background).
+ * None of those expose an independently-editable "table header" hook, so —
+ * same rationale as the sidebar glow — we penetrate with our own dedicated
+ * --table-* tokens rather than fighting shared variables. .markdown table
+ * reaches the chat-table's <table> too: Table.tsx's table-wrapper div is a
+ * plain DOM descendant of .markdown, not a separate document. */
 .markdown table {
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius) !important;
+  border-color: var(--table-border) !important;
+}
+.markdown th {
+  background-color: var(--table-header) !important;
+  color: var(--table-header-text) !important;
+  border-color: var(--table-border) !important;
+}
+.markdown td {
+  background-color: var(--table-row-bg) !important;
+  border-color: var(--table-border) !important;
+}
+.markdown tbody tr:hover > td {
+  background-color: var(--table-row-hover) !important;
 }
 
-/* Chat bubbles: the user bubble is hard-coded --chat-user; re-route the
-   AI/other surfaces to the content card tone so chat matches the preview. */
-.user-message, .user-bubble, [data-user-message] {
+/* ====== User bubble (v2 default layout) ======
+   v2.0.9 renders the user message as [data-ui="chat.user-bubble-message"] whose
+   .message-content-container carries Tailwind bg-muted (→ --muted); the
+   --chat-user token is only read by the legacy .bubble.messages-container
+   layout. Override the default layout so the user bubble follows the user's
+   chosen --chat-user regardless of layout. */
+[data-ui="chat.user-bubble-message"] .message-content-container {
   background-color: var(--chat-user) !important;
 }
 
-/* ====== Code Syntax — hljs DOM classes are cross-version (v2.0.9 defines no
-   syntax tokens), so we theme them directly via the --syntax-* tokens above. ====== */
-.markdown .hljs-keyword, .markdown .hljs-built_in, .markdown .hljs-type, .tiptap .hljs-keyword, .tiptap .hljs-built_in, .tiptap .hljs-type, .prose .hljs-keyword, .prose .hljs-built_in, .prose .hljs-type { color: var(--syntax-keyword) !important; }
-.markdown .hljs-string, .markdown .hljs-attr, .markdown .hljs-template-variable, .tiptap .hljs-string, .tiptap .hljs-attr, .tiptap .hljs-template-variable, .prose .hljs-string, .prose .hljs-attr, .prose .hljs-template-variable { color: var(--syntax-string) !important; }
-.markdown .hljs-number, .markdown .hljs-literal, .tiptap .hljs-number, .tiptap .hljs-literal, .prose .hljs-number, .prose .hljs-literal { color: var(--syntax-literal) !important; }
-.markdown .hljs-title, .markdown .hljs-function, .markdown .hljs-title.function_, .markdown .hljs-variable, .markdown .hljs-param, .tiptap .hljs-title, .tiptap .hljs-function, .tiptap .hljs-title.function_, .tiptap .hljs-variable, .tiptap .hljs-param, .prose .hljs-title, .prose .hljs-function, .prose .hljs-title.function_, .prose .hljs-variable, .prose .hljs-param { color: var(--syntax-function) !important; }
-.markdown .hljs-comment, .markdown .hljs-quote, .tiptap .hljs-comment, .tiptap .hljs-quote, .prose .hljs-comment, .prose .hljs-quote { color: var(--syntax-comment) !important; font-style: italic !important; }
-.markdown .hljs-punctuation, .markdown .hljs-symbol, .markdown .hljs-operator, .tiptap .hljs-punctuation, .tiptap .hljs-symbol, .tiptap .hljs-operator, .prose .hljs-punctuation, .prose .hljs-symbol, .prose .hljs-operator { color: var(--syntax-punctuation) !important; }
-.markdown .hljs-class, .markdown .hljs-title.class_, .tiptap .hljs-class, .tiptap .hljs-title.class_, .prose .hljs-class, .prose .hljs-title.class_ { color: var(--syntax-function) !important; }
-.markdown pre ::selection, .tiptap pre ::selection, .prose pre ::selection { background-color: var(--highlight-accent) !important; }
+/* v2.0.9 syntax highlighting is Shiki (bundled themes), which styles token
+   colors with INLINE style="color:…" — there are no --syntax-* tokens and
+   no highlight.js token classes. The code block BACKGROUND above (--code-block)
+   and inline-code color (--inline-code-foreground) are the only themeable code
+   surfaces; token colors are intentionally left to the Shiki theme. */
 `
 }

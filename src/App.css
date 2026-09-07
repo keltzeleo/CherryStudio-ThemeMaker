@@ -106,6 +106,15 @@ body{
   transition:background .25s ease,color .25s ease;
 }
 
+/* 键盘可达性：所有可交互控件统一焦点环（仅键盘触发，不影响鼠标/触控） */
+button:focus-visible,[role="button"]:focus-visible,.accent-ball:focus-visible,.strip-grip:focus-visible,.sync-help:focus-visible,summary:focus-visible,input:focus-visible{
+  outline:2px solid var(--color-primary);outline-offset:2px;
+}
+/* 减少动效偏好：关闭 chrome 装饰性动画/过渡，保留功能性切换 */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
 /* ── 顶层：预览即是主角 ─────────────────────────────────── */
 .stage{position:fixed;inset:0;display:flex;flex-direction:column}
 .topbar{
@@ -227,6 +236,12 @@ body.pick .scrolly:hover{outline:2px solid var(--color-primary);outline-offset:2
 .code pre .kwz[data-kw="literal"]{color:var(--kw-literal,#d7ba7d)}
 .code pre .kwz[data-kw="name"]{color:var(--kw-name,var(--color-text))}
 .code pre .kwz[data-kw="punct"]{color:var(--kw-punct,var(--color-text-3))}
+.kw-locked-badge{
+  margin-left:auto;padding:2px 7px;border-radius:999px;font-size:9.5px;letter-spacing:.02em;
+  color:var(--color-text-3);background:var(--color-background);border:1px solid var(--color-border-soft);
+  white-space:nowrap;cursor:help;
+}
+.code.kw-locked pre .kwz{cursor:not-allowed;opacity:.55;text-decoration:underline dotted currentColor;text-underline-offset:2px}
 .quote{
   margin:14px 0;padding:12px 16px;border-left:3px solid var(--color-reference);
   background:var(--color-reference-background);border-radius:0 10px 10px 0;color:var(--color-reference-text);font-style:italic;
