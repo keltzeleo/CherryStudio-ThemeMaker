@@ -218,7 +218,7 @@ test('v2 每预设 dark/light 两块都有 --sidebar 且跟随预览 --sidebar',
   }
 })
 
-test('v2 --inline-code 取自预览 muted 底（非 inputBg）；语法高亮是 Shiki（无 --syntax-*、无 .hljs-*）', () => {
+test('v2 --inline-code 取自预览 muted 底（非 inputBg）；语法高亮（Shiki 内联 style）在两个界面都没有 CSS 钩子，不发 --syntax-*/.hljs-*', () => {
   for (const p of PRESETS) {
     const css = v2(p)
     const root = parseVars(extractBlock(css, ':root:root') || '')
@@ -231,10 +231,15 @@ test('v2 --inline-code 取自预览 muted 底（非 inputBg）；语法高亮是
     // inline-code 文字色与预览 keyword 同源（v2 真实 token --inline-code-foreground）
     assert.equal(normColor(dark['--inline-code-foreground']), normColor(srcD['--kw-keyword']), `${p.name}/dark inline-code-foreground`)
     assert.equal(normColor(root['--inline-code-foreground']), normColor(srcL['--kw-keyword']), `${p.name}/light inline-code-foreground`)
-    // v2.0.9 用 Shiki 内联样式着色 token，既无 --syntax-* token，也无 .hljs-* 类
-    assert.ok(!/--syntax-[a-z-]+\s*:/.test(css), `${p.name} 不应输出 --syntax-* token`)
-    assert.ok(!css.includes('.hljs-'), `${p.name} 不应残留 .hljs-* 死代码`)
-    // 代码块底仍通过 --code-block + .shiki / .markdown pre 绑定
+    // VERIFIED against real CodeBlock.tsx/CodeViewer.tsx source: every fenced
+    // code block (chat markdown AND the standalone artifact viewer) renders
+    // through the same Shiki-based CodeViewer, painting tokens via inline
+    // style="color:…" — never a class. There is no --syntax-* token and no
+    // .hljs-* selector to emit; both would be dead weight.
+    assert.ok(!('--syntax-keyword' in dark), `${p.name} 不应输出 --syntax-keyword token`)
+    assert.ok(!('--syntax-operator' in dark), `${p.name} 不应输出 --syntax-operator token`)
+    assert.doesNotMatch(css, /\.hljs-keyword/, `${p.name} 不应输出 hljs-keyword 穿透`)
+    // 代码块底仍通过 --code-block + .shiki / .markdown pre 绑定，这个是真实生效的
     assert.match(css, /\.shiki/, `${p.name} 缺 .shiki 代码块规则`)
     assert.match(css, /\.markdown pre/, `${p.name} 缺 markdown 代码块结构选择器`)
   }
