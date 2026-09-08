@@ -54,13 +54,14 @@ export function buildVars(plan, glow) {
   const tt = textTiers(s.bg)
   const g = glow || DEFAULT_GLOW
   const harm = harmonySurface(s.accent, dk ? 'dark' : 'light', s.scheme)
+  const text3 = s.text3 || tt.t3
   return {
     '--color-background': s.bg,
     '--color-background-soft': s.soft,
     '--color-background-mute': s.mute,
     '--color-text': s.text || tt.t1,
     '--color-text-2': s.text2 || tt.t2,
-    '--color-text-3': s.text3 || tt.t3,
+    '--color-text-3': text3,
     '--color-primary': s.accent,
     '--color-primary-soft': hexA(s.accent, 0.6),
     '--color-primary-mute': hexA(s.accent, 0.3),
@@ -85,7 +86,7 @@ export function buildVars(plan, glow) {
     '--kw-string': s.kwString || (dk ? '#a5d6ff' : '#0a3069'),
     '--kw-literal': s.kwLiteral || (dk ? '#d7ba7d' : '#9a6700'),
     '--kw-name': s.kwName || harm.codeParam,
-    '--kw-punct': s.kwPunct || 'var(--color-text-3)',
+    '--kw-punct': s.kwPunct || text3,
     '--color-hover': s.hover || (dk ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'),
     '--color-active': s.active || hexA(s.accent, dk ? 0.12 : 0.08),
     '--color-border': s.border || (dk ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)'),

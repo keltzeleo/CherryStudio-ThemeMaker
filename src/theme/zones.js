@@ -110,11 +110,3 @@ export const ZONES = {
 
 export const VAR_LINKS = {}
 Object.entries(ZONES).forEach(([id, z]) => z.parts.forEach(p => { (VAR_LINKS[p.v] = VAR_LINKS[p.v] || []).push(id) }))
-
-// Cherry Studio v2.0.9 renders code syntax highlighting via Shiki, which writes
-// per-token colors as inline `style="color:…"` — there is no CSS variable or
-// class hook for it (see src/theme/exportV2.js). Any --kw-* the user picks here
-// is exported for v1.9.12 (highlight.js classes) but silently has no effect
-// after pasting into v2, so we lock these zones out under the v2 export target
-// instead of letting the editor lie about WYSIWYG.
-export const V2_UNSUPPORTED_ZONES = new Set(['kwcomment', 'kwkeyword', 'kwstring', 'kwliteral', 'kwname', 'kwpunct'])

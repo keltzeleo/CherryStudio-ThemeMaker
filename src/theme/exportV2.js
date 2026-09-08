@@ -22,8 +22,7 @@
  *      forward-compat, so its values are literal but non-authoritative.
  *   4. Cherry product semantics (`--background-subtle`, `--link`, `--code-block`,
  *      `--reference`, `--highlight`, `--chat-user`, `--resource-list-row-*`) —
- *      the unprefixed product namespace. (v2.0.9 syntax highlighting is Shiki
- *      with inline-styled tokens, so there are NO `--syntax-*` tokens.)
+ *      the unprefixed product namespace.
  *
  * ACCENT (the critical path): the app maps `--primary: var(--cs-theme-primary)`
  * — NOT `--cs-primary`. It also defines `--cs-theme-primary: var(--cs-primary)`,
@@ -39,28 +38,41 @@
  * ourselves.
  *
  * SPECIFICITY: the theme beats the app base via specificity, not source order
- * (the injection position is not guaranteed). `.dark` sits ON `<html>` (the
- * `:root` element), so we emit light as `:root:root` and dark as `:root.dark`
- * (both 0,2,0 > base 0,1,0); `:root:root` precedes `:root.dark` so dark wins by
- * source order inside our own file.
+ * (the injection position is not guaranteed, and Cherry's custom-CSS setting
+ * injects unlayered — outside the app's own cascade layers — so unlayered
+ * normal declarations already outrank layered ones; the specificity boost
+ * below is what settles the tie against the app's OWN unlayered `:root`
+ * bridge rule, e.g. `:root { --primary: var(--cs-theme-primary) }`). `.dark`
+ * sits ON `<html>` (the `:root` element), so we emit light as `:root:root`
+ * and dark as `:root.dark` (both 0,2,0 > base 0,1,0); `:root:root` precedes
+ * `:root.dark` so dark wins by source order inside our own file.
  *
- * REAL-MACHINE COVERAGE (verified against the app.asar bundle, not docs):
- *  - The user bubble already follows the accent-adjacent `--chat-user` token:
- *    `.message.message-user .message-content-container` is Tailwind `bg-muted`
- *    (→ `--muted`), so the emitted `--chat-user` is NOT read there — we re-route
- *    it via the `[data-ui="chat.user-bubble-message"]` rule below. AI bubbles
- *    (`.message-assistant`) are natively transparent, no override needed.
- *  - The input bar `.inputbar-container` reads Tailwind `bg-card`/`border-border`
- *    (→ `--card`/`--border`), NOT `--input`/`--input-background` — confirmed via
- *    live DOM ancestor-chain probe. We re-route it via the `.inputbar-container`
- *    penetration below so the exported `--input*` tokens (otherwise unread)
- *    reach it.
- *  - Table th/td/hover: v2.0.9's `.markdown table` markup has no `--table-*`
- *    tokens of its own, so `thead th` / `tbody td` / `tbody tr:hover td` need
- *    explicit penetration (below) — otherwise the preview's table header/row/
- *    hover colors are silently dropped on export. `chat.table` is a SCROLL
- *    CONTAINER, not a `<table>` markup penetration entry point — the
- *    `.markdown table` rules are the only table surface.
+ * REAL-MACHINE COVERAGE (verified against the app.asar bundle and the public
+ * CherryHQ/cherry-studio source, not docs):
+ *  - The user bubble follows `--chat-user` via a structural re-route: v2.0.9
+ *    renders the user message as `[data-ui="chat.user-bubble-message"]` whose
+ *    `.message-content-container` is Tailwind `bg-muted` (→ `--muted`), so the
+ *    emitted `--chat-user` is NOT read there natively — we re-route it below.
+ *    AI bubbles (`.message-assistant`) are natively transparent, no override
+ *    needed.
+ *  - The input bar `.inputbar-container` uses Tailwind `bg-card`/`border-border`
+ *    (→ `--card`/`--border`), NOT `--input`/`--input-background` — re-routed
+ *    below so the exported `--input*` tokens (otherwise unread) reach it.
+ *  - Blockquote/table/th/td: verified against Cherry's real markdown.css and
+ *    Table.tsx (see comments at each penetration rule below) — none of those
+ *    surfaces expose an independently-editable hook, so we penetrate with our
+ *    own dedicated tokens rather than fighting shared variables.
+ *  - Code syntax highlighting: VERIFIED against the real `CodeBlock.tsx` /
+ *    `CodeViewer.tsx` source — any fenced code block WITH a language tag
+ *    (i.e. almost every real-world fence) renders through the same
+ *    `CodeViewer` component in BOTH the regular chat markdown and the
+ *    standalone artifact viewer. That component tokenizes with Shiki
+ *    (`shiki/core`) and paints each token via `getReactStyleFromToken`,
+ *    which returns a React inline `style` object — never a CSS class. There
+ *    is no `.hljs-*` (or any other class-based) hook anywhere in this app;
+ *    syntax token colors (keyword/string/comment/…) are NOT themeable via
+ *    CSS in v2.0.9, full stop, in either surface. We do not attempt a
+ *    penetration for this — there is genuinely nothing to attach it to.
  *  - `data-ui` is a MULTI-VALUE attribute (`data-ui="ui.sidebar ui.sidebar-list"`
  *    …); attribute selectors must use `~=` (e.g. `[data-ui~="ui.sidebar"]`), not
  *    `=`. The chat list is VIRTUALIZED — off-screen DOM is unmounted, so
@@ -101,39 +113,6 @@ function tokenBlock(selector, pairs) {
 }
 
 // Map one mode's preview fields → the v2.0.9 token surface.
-//
-// v2.0.9 has a FOUR-layer model:
-//   1. `--color-*` public contract (what Tailwind v4 / shadcn utilities read).
-//   2. `--cs-*` palette namespace (--cs-background/primary/border/card/sidebar/
-//      input/accent/muted/popover/foreground…) — the SINGLE source of truth the
-//      app derives the other layers from.
-//   3. bare shadcn aliases built as `var(--cs-*)` (--background, --card, --primary…).
-//   4. Cherry product semantics (--background-subtle, --link, --code-block,
-//      --reference, --highlight, --chat-user, --resource-list-row-*…): the
-//      unprefixed PUBLIC namespace. In the app's product.css these mostly read
-//      `var(--cs-*)`, but `--code-block`/`--chat-user` are literal colors and
-//      `--link`/`--highlight` read `--cs-blue-*`/`--cs-amber-*`. We emit them
-//      unprefixed (never `--cs-link`/`--cs-code-block`/`--cs-chat-user`) so we
-//      override the public aliases directly.
-//
-// A custom theme MUST override layer 2 (`--cs-*`) so layers 3/4 pick it up, AND
-// the bare aliases + product semantics directly (so consumers reading them
-// directly are themed too). Setting ONLY bare aliases (the old behaviour) leaks
-// app defaults for any surface reading `--cs-*` → inconsistent coverage.
-//
-// CRITICAL for v2.0.9: the app is Tailwind v4 + shadcn, but its utilities read the
-// BARE aliases (`.bg-card → var(--card)`, `.bg-primary → var(--primary)`,
-// `.text-foreground → var(--foreground)` …), NOT `--color-*`. The bare aliases are
-// mapped in `:root`/`.dark` from `--cs-*` (e.g. `--card: var(--cs-card)`), except
-// `--primary: var(--cs-theme-primary)`. The host writes `--cs-theme-primary*`
-// INLINE on <html>, so `--cs-primary` alone can never reach `--primary`. Therefore
-// the bare `--primary`/`--primary-foreground` MUST be emitted as LITERALS (boosted
-// specificity) — that is what actually overrides the accent. We ALSO emit `--cs-*`
-// (so bare aliases and direct `--cs-*` consumers resolve to our values when the
-// host doesn't inject an inline accent) plus the bare aliases + product semantics
-// as literals. The `--color-*` layer is emitted for symmetry/forward-compat but is
-// NOT what renders v2.0.9 — skipping the BARE aliases is the #1 reason a pasted
-// theme "has no effect".
 function v2Tokens(f) {
   const primary = f.primary
   const fg = foregroundOf(primary)
@@ -261,6 +240,15 @@ function v2Tokens(f) {
     ['--highlight-foreground', fg],
     ['--highlight-accent', hexA(primary, 0.3)],
     ['--chat-user', f.userBg],
+    // Thinking box — VERIFIED against real ThinkingBlock.tsx: the expanded
+    // content wrapped in [data-ui="part:message-reasoning"] uses Tailwind
+    // bg-muted (a generic neutral, not our accent-tinted thinkingOf() design)
+    // and an inline color: var(--muted-foreground) (also generic). We emit
+    // our own dedicated hook and penetrate below so it matches the preview's
+    // distinct thinking-box surface instead of the generic muted one.
+    ['--thinking-bg', f.thinkBg],
+    ['--thinking-border', f.thinkBorder],
+    ['--thinking-text', f.thinkText],
     ['--table-header', f.tableHeader],
     ['--table-header-text', f.tableHeaderText],
     ['--table-border', f.tableBorder],
@@ -339,8 +327,8 @@ export function buildV2Css(dk, lt, meta = {}) {
   return `/**
  * @name: Cherry Studio Custom Theme (${name} - ${CHERRY_V2_TARGET})
  * @description: Tailwind v4 / shadcn v2.0.9 namespace. Emits the bare aliases
- * (--background/--card/--primary/… — what the .bg-*/.text-*/… utilities actually
- * read, and the only way to bypass the host's inline --cs-theme-primary*) plus
+ * (--background/--card/--primary/… — what the .bg-*, .text-*, … utilities
+ * actually read, and the only way to bypass the host's inline --cs-theme-primary) plus
  * the --cs-* palette and Cherry product semantics, all at boosted specificity
  * (:root:root light / :root.dark dark) so the theme wins regardless of injection
  * order. Adds the sidebar's .sidebar-theme --sidebar-* glow tokens. Values come
@@ -375,6 +363,30 @@ ${glowTokens(false)}
   border-color: var(--input) !important;
 }
 
+/* Conversation list pane (PageSidebar.tsx) — VERIFIED against Cherry's real
+ * source: the pane itself carries no bg-* class at all (transparent), so it
+ * shows through to ConversationShell.tsx's shared bg-background — the SAME
+ * surface the chat area uses. v2.0.9 genuinely has no independent list-panel
+ * color, unlike the icon rail (Sidebar.tsx/AppShell.tsx), which does own
+ * bg-sidebar. The preview models list-panel == rail (both --sidebar),
+ * distinct from chat (--background), so we force it via the pane's own
+ * data attribute to match that intent. */
+[data-resource-list-pane] {
+  background-color: var(--sidebar) !important;
+}
+
+/* Thinking box (ThinkingBlock.tsx) — VERIFIED against real source: the
+ * expanded content div under [data-ui="part:message-reasoning"] uses
+ * Tailwind bg-muted plus an inline color: var(--muted-foreground) — both
+ * generic, not our accent-tinted thinkingOf() design. Re-route to our own
+ * dedicated tokens; the stylesheet !important also wins over the element's
+ * inline color style (author !important outranks inline normal styles). */
+[data-ui="part:message-reasoning"] .bg-muted {
+  background-color: var(--thinking-bg) !important;
+  border: 1px solid var(--thinking-border) !important;
+  color: var(--thinking-text) !important;
+}
+
 .markdown pre, .tiptap pre, .shiki, .prose pre {
   background-color: var(--code-block) !important;
   color: var(--foreground) !important;
@@ -390,6 +402,7 @@ ${glowTokens(false)}
   color: var(--inline-code-foreground) !important;
   border-radius: 6px !important;
 }
+
 /* Blockquote — VERIFIED against Cherry's real markdown.css (v2.0.12):
  * .markdown blockquote reads background-color: var(--markdown-content-background)
  * (shared with th/inline-code/kbd — do NOT redefine that var globally, it'd
@@ -406,6 +419,29 @@ ${glowTokens(false)}
   background-color: var(--reference-subtle) !important;
   border-left-color: var(--reference) !important;
   color: var(--reference-foreground) !important;
+}
+
+/* GitHub-style markdown alerts (> [!NOTE] etc.) — the app hard-codes their
+   accent via prefers-color-scheme (follows the OS theme, not the app's own
+   light/dark toggle), so we override unconditionally. Double class name
+   boosts specificity over the app's single-class rule. We only have one
+   accent color modeled (no separate success/warning/danger in the preview),
+   so every alert kind maps to --primary; background/border reuse the tokens
+   we already control. */
+.markdown-alert.markdown-alert {
+  --color-border-default: var(--border-subtle);
+  --color-accent-fg: var(--primary);
+  --color-accent-emphasis: var(--primary);
+  --color-success-fg: var(--primary);
+  --color-success-emphasis: var(--primary);
+  --color-attention-fg: var(--primary);
+  --color-attention-emphasis: var(--primary);
+  --color-danger-fg: var(--primary);
+  --color-danger-emphasis: var(--primary);
+  --color-done-fg: var(--primary);
+  --color-done-emphasis: var(--primary);
+  background: var(--background-subtle);
+  border-color: var(--border-subtle);
 }
 
 /* Table — VERIFIED against Cherry's real chat table renderer
@@ -445,10 +481,12 @@ ${glowTokens(false)}
   background-color: var(--chat-user) !important;
 }
 
-/* v2.0.9 syntax highlighting is Shiki (bundled themes), which styles token
-   colors with INLINE style="color:…" — there are no --syntax-* tokens and
-   no highlight.js token classes. The code block BACKGROUND above (--code-block)
-   and inline-code color (--inline-code-foreground) are the only themeable code
-   surfaces; token colors are intentionally left to the Shiki theme. */
+/* v2.0.9 renders EVERY fenced code block (regular chat markdown and the
+   standalone artifact viewer alike) through the same Shiki-based CodeViewer
+   component, which paints token colors via an INLINE style="color:…" per
+   token — never a CSS class. The code block BACKGROUND above (--code-block)
+   and inline-code color (--inline-code-foreground) are the only themeable
+   surfaces here; syntax token colors are genuinely unthemeable via CSS in
+   this version, in both surfaces. */
 `
 }

@@ -236,12 +236,6 @@ body.pick .scrolly:hover{outline:2px solid var(--color-primary);outline-offset:2
 .code pre .kwz[data-kw="literal"]{color:var(--kw-literal,#d7ba7d)}
 .code pre .kwz[data-kw="name"]{color:var(--kw-name,var(--color-text))}
 .code pre .kwz[data-kw="punct"]{color:var(--kw-punct,var(--color-text-3))}
-.kw-locked-badge{
-  margin-left:auto;padding:2px 7px;border-radius:999px;font-size:9.5px;letter-spacing:.02em;
-  color:var(--color-text-3);background:var(--color-background);border:1px solid var(--color-border-soft);
-  white-space:nowrap;cursor:help;
-}
-.code.kw-locked pre .kwz{cursor:not-allowed;opacity:.55;text-decoration:underline dotted currentColor;text-underline-offset:2px}
 .quote{
   margin:14px 0;padding:12px 16px;border-left:3px solid var(--color-reference);
   background:var(--color-reference-background);border-radius:0 10px 10px 0;color:var(--color-reference-text);font-style:italic;
