@@ -548,8 +548,13 @@ function App() {
   }
 
   const copyPreset = name => {
-    const p = presetsRef.current.find(x => x.name === name)
-    const css = p ? buildPresetCss(p, exportTarget) : buildPresetCss(currentPreset(), exportTarget)
+    // Copying the CURRENTLY ACTIVE preset must reflect any live, unsaved edits —
+    // presetsRef.current still holds the last-SAVED snapshot, which goes stale
+    // the moment you tweak a color without explicitly saving it back. Only a
+    // different (not currently loaded) preset can safely be read from storage.
+    const isActive = name === selNameRef.current
+    const p = isActive ? null : presetsRef.current.find(x => x.name === name)
+    const css = p ? buildPresetCss(p, exportTarget) : buildPresetCss(currentPreset(name), exportTarget)
     copyText(css).then(ok => toast(ok ? '已复制完整 Cherry Studio CSS' : '复制失败，请手动复制'))
   }
 
