@@ -202,7 +202,7 @@ function App() {
       const tgt = ensureOtherSnapshot()
       const curSnap = snapCurrentVars()
       const SYNC_KEYS = ['--color-primary', '--color-background', '--color-background-soft',
-        '--chat-background-user', '--chat-background-ai', '--color-code-background', '--local-input-bg']
+        '--chat-background-user', '--chat-text-user', '--chat-background-ai', '--color-code-background', '--local-input-bg']
       SYNC_KEYS.forEach(v => { if (curSnap[v]) tgt[v] = convertColor(curSnap[v], varKind(v), other) })
       if (curSnap['--color-primary']) {
         tgt['--local-thinking-bg'] = thinkingOf(curSnap['--color-primary'], other === 'dark').bg
@@ -285,8 +285,7 @@ function App() {
   }
 
   const setVal = (p, val) => {
-    if (p.v === '--color-link-hover') { setVar(p.v, val); return }
-    if (p.v === '--table-header-text') { setVar(p.v, val); return }
+    if (p.v === '--color-link-hover') { setVar(p.v, val); syncToOtherMode(p.v, val, varKind(p.v)); return }
     if (p.v === '--color-primary') {
       const hex = toHex(val)
       const prevAccent = cssVar('--color-primary')
