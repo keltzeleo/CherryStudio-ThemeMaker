@@ -362,15 +362,21 @@ ${glowTokens(false)}
   border-color: var(--input) !important;
 }
 
-/* Conversation list pane (PageSidebar.tsx) — VERIFIED against Cherry's real
- * source: the pane itself carries no bg-* class at all (transparent), so it
- * shows through to ConversationShell.tsx's shared bg-background — the SAME
- * surface the chat area uses. v2.0.9 genuinely has no independent list-panel
- * color, unlike the icon rail (Sidebar.tsx/AppShell.tsx), which does own
- * bg-sidebar. The preview models list-panel == rail (both --sidebar),
- * distinct from chat (--background), so we force it via the pane's own
- * data attribute to match that intent. */
+/* Conversation list pane — the [data-resource-list-pane] wrapper below is
+ * from an OLDER PageSidebar.tsx source read; it's an outer structural
+ * ancestor that is (or was) transparent. VERIFIED against the real,
+ * currently-installed app's live DOM (user-supplied, not source-guessed):
+ * the actual opaque, topmost-painted layer is a DIFFERENT, inner element —
+ * [data-ui="chat.topic-list"] (data-testid="resource-list-topic") — which
+ * carries Tailwind's bg-background directly (the SAME surface the chat area
+ * uses, painted solid, fully covering whatever the outer wrapper below
+ * paints). That's the real reason this panel always looked chat-colored
+ * regardless of the outer rule: this inner layer sits on top of it. Force
+ * this one too — it's the one that actually determines what you see. */
 [data-resource-list-pane] {
+  background-color: var(--sidebar) !important;
+}
+[data-ui="chat.topic-list"] {
   background-color: var(--sidebar) !important;
 }
 
