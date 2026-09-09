@@ -11,7 +11,7 @@ export const PRESETS = [
   { name:'Paper', cert:'预设', scheme:'splitComp', glow:['#6b857e','#8b95b1','#9b7ba7','#b18b95','#a79b7b'],
     dark:{ bg:'#232527', soft:'#2c2f31', mute:'#34383a', accent:'#6b857e', link:'#338cff', ai:'rgba(107,133,126,.05)', user:'rgba(107,133,126,.08)', userText:'#ECEFF1' },
     light:{ bg:'#f5f6f7', soft:'#eef0f2', mute:'#e4e7ea', accent:'#6b857e', link:'#1677ff', ai:'rgba(107,133,126,.03)', user:'rgba(107,133,126,.05)', userText:'#20252a' } },
-  { name:'Moss', cert:'预设', scheme:'square', glow:['#8db578','#A8C98B','#8FB5C0','#C9B27A','#A0A878'],
+  { name:'Moss', cert:'预设', scheme:'triadic', glow:['#8db578','#A8C98B','#8FB5C0','#C9B27A','#A0A878'],
     dark:{ bg:'#1a1e1b', soft:'#232824', mute:'#2b312c', accent:'#8db578', link:'#86b7c8', ai:'rgba(141,181,120,.05)', user:'rgba(141,181,120,.08)', userText:'#e9f0ea' },
     light:{ bg:'#f2f5f0', soft:'#e9ede6', mute:'#dce2d8', accent:'#8db578', link:'#1677ff', ai:'rgba(141,181,120,.03)', user:'rgba(141,181,120,.05)', userText:'#232820' } },
   { name:'Ocean', cert:'预设', scheme:'complementary', glow:['#6fb5d4','#9AB8C9','#8FA0D0','#C0B278','#8BB5A8'],
