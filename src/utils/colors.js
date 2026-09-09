@@ -188,6 +188,15 @@ export function convertColor(hex, kind, toMode) {
       return legacyHslToHex(h, Math.max(55, s), toLight ? Math.max(35, l - 16) : Math.min(72, l + 16))
     case 'syntax':
       return legacyHslToHex(h, s, toLight ? Math.max(30, l - 20) : Math.min(75, l + 15))
+    case 'panelText':
+      // Colored text painted on a panel/accent-tinted surface (table header,
+      // blockquote). Must NOT reuse 'panel' (that clamps lightness to 100/19 —
+      // fine for a background, but collapses arbitrary text hues to white).
+      // Keep the hue, cap saturation so it stays legible-muted, clamp lightness
+      // into a readable band for the target mode instead of the source's own.
+      return toLight
+        ? legacyHslToHex(h, Math.min(s, 35), Math.min(Math.max(l, 25), 40))
+        : legacyHslToHex(h, Math.min(s, 35), Math.min(Math.max(l, 65), 82))
     default:
       return hex
   }
@@ -199,6 +208,7 @@ export function varKind(v) {
   if (v === '--color-link' || v === '--color-link-hover') return 'link'
   if (v === '--color-background' || v === '--color-background-soft' || v === '--color-background-mute' || v === '--sidebar' || v === '--local-input-bg') return 'bg'
   if (v.startsWith('--chat-background') || v === '--color-code-background' || v === '--table-header' || v === '--table-row-bg' || v === '--local-thinking-bg' || v === '--local-input-border') return 'panel'
+  if (v === '--table-header-text' || v === '--color-reference-text') return 'panelText'
   if (v.startsWith('--color-text') || v === '--chat-text-user' || v === '--local-thinking-text') return 'text'
   if (v.startsWith('--kw-')) return 'syntax'
   return 'panel'
