@@ -160,8 +160,6 @@ function App() {
 
   const cssVar = k => currentVars.current[k] ?? ''
 
-  const active = p => (modeRef.current === 'light' && p.light) ? p.light : (p.dark || p)
-
   // 统一修改：改当前模式颜色时，按转换规则写入另一模式的快照（切过去即生效）
   const ensureOtherSnapshot = () => {
     const other = modeRef.current === 'dark' ? 'light' : 'dark'
@@ -242,7 +240,7 @@ function App() {
     writeVars({ [k]: v })
   }
 
-  const applyPreset = p => writeVars(buildVars(active(p), p.glow))
+  const applyPreset = p => writeVars(buildVars(presetPlan(p, modeRef.current), p.glow))
 
   const snapCurrentVars = () => {
     const o = {}
