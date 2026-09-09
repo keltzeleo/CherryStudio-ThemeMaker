@@ -3,7 +3,7 @@ import { PRESETS, DEFAULT_GLOW } from './theme/presets.js'
 import { ZONES, VAR_LINKS } from './theme/zones.js'
 import { VAR_KEYS, varsToPlan, presetPlan, buildVars, buildPresetCss } from './theme/themeModel.js'
 import { CHERRY_V1_TARGET, CHERRY_V2_TARGET } from './theme/exportV2.js'
-import { linkHoverOf, convertColor, varKind, thinkingOf } from './utils/colors.js'
+import { linkHoverOf, convertColor, varKind, thinkingOf, harmonySurface } from './utils/colors.js'
 import { parseColor, roundAlpha, wcagContrast, toHex, rgbaWithAlpha } from './utils/colorUtils.js'
 
 // 解析一个色值，得到纯 hex 与透明度；跟随 var(--x) 引用到真实颜色，
@@ -124,7 +124,7 @@ function App() {
   const [, setTick] = useState(0)
 
   const currentVars = useRef({})
-  const [curVars, setCurVars] = useState(() => buildVars(PRESETS[0].dark || PRESETS[0], PRESETS[0].glow))
+  const [curVars, setCurVars] = useState(() => buildVars(presetPlan(PRESETS[0], 'dark'), PRESETS[0].glow))
   const presetsRef = useRef(PRESETS)
   const selNameRef = useRef('Kel Meow')
   const modeRef = useRef('dark')
@@ -252,8 +252,14 @@ function App() {
 
   const draftChipRows = () => {
     if (!draft) return null
-    const darkVars = mode === 'dark' ? curVars : (snaps.dark || buildVars(varsToPlan(curVars), DEFAULT_GLOW))
-    const lightVars = mode === 'light' ? curVars : (snaps.light || buildVars(varsToPlan(curVars), DEFAULT_GLOW))
+    // varsToPlan() only reads CSS variables, so it can never carry `scheme`
+    // (pure JS metadata, not a var) — reattach it from the active preset so
+    // the other-mode swatch preview doesn't fall back to tetradic when no
+    // snapshot is cached yet.
+    const scheme = presetsRef.current.find(x => x.name === selNameRef.current)?.scheme
+    const otherPlan = { ...varsToPlan(curVars), scheme }
+    const darkVars = mode === 'dark' ? curVars : (snaps.dark || buildVars(otherPlan, DEFAULT_GLOW))
+    const lightVars = mode === 'light' ? curVars : (snaps.light || buildVars(otherPlan, DEFAULT_GLOW))
     return {
       dark: swatchRow(varsToPlan(darkVars)),
       light: swatchRow(varsToPlan(lightVars)),
@@ -269,6 +275,12 @@ function App() {
     return {
       name: name || draftName || `我的主题 ${presets.length + 1}`,
       cert: '自建', own: true, glow: DEFAULT_GLOW.map((_, i) => cssVar('--sidebar-glow-' + (i + 1))),
+      // Without this, presetPlan() (used by buildPresetCss/export and by
+      // applyPreset) sees scheme=undefined and harmonySurface() silently
+      // falls back to 'tetradic' — the same bug as applyPreset's old
+      // active() helper, just one level up: constructing a "current state
+      // as a preset" object that drops the source preset's scheme.
+      scheme: selP?.scheme,
       dark: mode === 'dark' ? cur : otherDark,
       light: mode === 'light' ? cur : otherLight,
     }
@@ -282,33 +294,69 @@ function App() {
     return v
   }
 
+  // Shared by setVal's --color-primary branch and onAccentBallChange (the
+  // dedicated ACCENT-ball picker) — these were two separate copies of the
+  // same "re-derive dependents still tracking accent's default" logic that
+  // had drifted out of sync (only one of them knew about table/reference/
+  // kw-name). One shared implementation now; fixing it once fixes both.
+  const applyAccentDependents = (prevAccent, hex, curDark) => {
+    if (!prevAccent) return
+    if (cssVar('--local-thinking-text') === thinkingOf(prevAccent, curDark).text) {
+      setVar('--local-thinking-bg', thinkingOf(hex, curDark).bg)
+      setVar('--local-thinking-border', thinkingOf(hex, curDark).border)
+      setVar('--local-thinking-text', thinkingOf(hex, curDark).text)
+    }
+    const scheme = presetsRef.current.find(x => x.name === selNameRef.current)?.scheme
+    const prevHarm = harmonySurface(prevAccent, curDark ? 'dark' : 'light', scheme)
+    const newHarm = harmonySurface(hex, curDark ? 'dark' : 'light', scheme)
+    if (cssVar('--table-header') === prevHarm.table) setVar('--table-header', newHarm.table)
+    if (cssVar('--table-header-text') === prevHarm.tableText) setVar('--table-header-text', newHarm.tableText)
+    if (cssVar('--color-reference') === prevHarm.quoteLine) setVar('--color-reference', newHarm.quoteLine)
+    if (cssVar('--color-reference-text') === prevHarm.quoteText) setVar('--color-reference-text', newHarm.quoteText)
+    if (cssVar('--color-reference-background') === prevHarm.quoteBg) setVar('--color-reference-background', newHarm.quoteBg)
+    if (cssVar('--kw-name') === prevHarm.codeParam) setVar('--kw-name', newHarm.codeParam)
+  }
+
   const setVal = (p, val) => {
     if (p.v === '--color-link-hover') { setVar(p.v, val); syncToOtherMode(p.v, val, varKind(p.v)); return }
+    // Several exported vars default to "follow another editable field" or
+    // "follow accent's harmony-derived surface" — but ONLY at the moment
+    // buildVars() first computes them. That fallback gets baked into its
+    // own literal CSS variable, and varsToPlan() (used by every snapshot /
+    // export / draft-save from then on) always captures it as an explicit
+    // field — silently freezing the link the instant the source changes.
+    // The fix, applied uniformly below: before writing the source's new
+    // value, check whether each dependent still equals what the source's
+    // OLD value would have produced; only those still tracking the default
+    // (never independently customized) get re-derived alongside it.
     if (p.v === '--color-primary') {
       const hex = toHex(val)
       const prevAccent = cssVar('--color-primary')
       const curDark = modeRef.current === 'dark'
       setVar('--color-primary', hex)
-      if (prevAccent && cssVar('--local-thinking-text') === thinkingOf(prevAccent, curDark).text) {
-        setVar('--local-thinking-bg', thinkingOf(hex, curDark).bg)
-        setVar('--local-thinking-border', thinkingOf(hex, curDark).border)
-        setVar('--local-thinking-text', thinkingOf(hex, curDark).text)
-      }
+      applyAccentDependents(prevAccent, hex, curDark)
       syncToOtherMode('--color-primary', hex, 'accent')
       return
     }
     if (p.v === '--color-background-soft') {
-      // --sidebar defaults to --color-background-soft (rail == list panel)
-      // ONLY at the moment a preset first loads — buildVars() bakes that
-      // fallback into its own literal --sidebar value, and varsToPlan()
-      // then always captures --sidebar as an explicit field forever after,
-      // freezing the link. Re-derive --sidebar here too, but only while it
-      // was still actually tracking soft (never independently customized).
+      // --sidebar and --local-input-bg both default to this (rail/input ==
+      // list panel).
       const prevSoft = cssVar('--color-background-soft')
-      const sidebarWasTrackingSoft = cssVar('--sidebar') === prevSoft
+      const sidebarWasTracking = cssVar('--sidebar') === prevSoft
+      const inputBgWasTracking = cssVar('--local-input-bg') === prevSoft
       setVar('--color-background-soft', val)
-      if (sidebarWasTrackingSoft) setVar('--sidebar', val)
+      if (sidebarWasTracking) setVar('--sidebar', val)
+      if (inputBgWasTracking) setVar('--local-input-bg', val)
       syncToOtherMode('--color-background-soft', val, varKind('--color-background-soft'))
+      return
+    }
+    if (p.v === '--color-background-mute') {
+      // --color-code-background defaults to this.
+      const prevMute = cssVar('--color-background-mute')
+      const codeBgWasTracking = cssVar('--color-code-background') === prevMute
+      setVar('--color-background-mute', val)
+      if (codeBgWasTracking) setVar('--color-code-background', val)
+      syncToOtherMode('--color-background-mute', val, varKind('--color-background-mute'))
       return
     }
     setVar(p.v, p.kind === 'range' ? val + (p.unit || '') : val)
@@ -350,8 +398,8 @@ function App() {
     baseRef.current = snapCurrentVars()
     const p = presetsRef.current.find(x => x.name === selNameRef.current)
     if (p && (p.dark || p.light)) {
-      modeSnapshotsRef.current.dark = buildVars(p.dark || p, p.glow)
-      modeSnapshotsRef.current.light = buildVars(p.light || p, p.glow)
+      modeSnapshotsRef.current.dark = buildVars(presetPlan(p, 'dark'), p.glow)
+      modeSnapshotsRef.current.light = buildVars(presetPlan(p, 'light'), p.glow)
     } else {
       modeSnapshotsRef.current = { dark: null, light: null }
     }
@@ -548,11 +596,7 @@ function App() {
     const curDark = modeRef.current === 'dark'
     setVar('--color-primary', v)
     setVar('--color-active', rgbaWithAlpha(v, modeRef.current === 'dark' ? 0.12 : 0.08))
-    if (prevAccent && cssVar('--local-thinking-text') === thinkingOf(prevAccent, curDark).text) {
-      setVar('--local-thinking-bg', thinkingOf(v, curDark).bg)
-      setVar('--local-thinking-border', thinkingOf(v, curDark).border)
-      setVar('--local-thinking-text', thinkingOf(v, curDark).text)
-    }
+    applyAccentDependents(prevAccent, v, curDark)
     syncToOtherMode('--color-primary', v, 'accent')
     setTick(t => t + 1)
     commitHistory()
@@ -665,7 +709,7 @@ function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-mode', 'dark')
     document.body.classList.add('pick')
-    currentVars.current = buildVars(PRESETS[0].dark || PRESETS[0], PRESETS[0].glow)
+    currentVars.current = buildVars(presetPlan(PRESETS[0], 'dark'), PRESETS[0].glow)
     Object.entries(currentVars.current).forEach(([k, v]) => {
       if (v === undefined || v === null || v === '') return
       document.documentElement.style.setProperty(k, v)
