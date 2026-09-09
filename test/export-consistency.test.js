@@ -2,8 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { PRESETS, DEFAULT_GLOW } from '../src/theme/presets.js'
 import { VAR_KEYS, buildVars, varsToPlan, buildPresetCss, presetPlan } from '../src/theme/themeModel.js'
-import { convertColor, hexA, toHex, linkHoverOf, varKind, thinkingOf } from '../src/utils/colors.js'
-import { parseColor, hexToRgbOnly } from '../src/utils/colorUtils.js'
+import { convertColor, linkHoverOf, varKind, thinkingOf } from '../src/utils/colors.js'
+import { parseColor, hexToRgbOnly, wcagContrast, toHex, rgbaWithAlpha } from '../src/utils/colorUtils.js'
 
 // 把任意 CSS 颜色归一化成统一的 rgba(r,g,b,a)，用于跨「预览格式 vs 官方
 // resolver 格式」的颜色等价比较（大小写 / 空格 / rgba vs hex 都视为同色）。
@@ -272,7 +272,7 @@ test('所有预设均能导出为完整分层 CSS（>20KB）', () => {
 })
 
 test('hexA 生成合法的 rgba（alpha-hex 边框格式，与 Cherry 官方一致）', () => {
-  assert.equal(hexA('#E89975', 0.55), 'rgba(232,153,117,0.55)')
+  assert.equal(rgbaWithAlpha('#E89975', 0.55), 'rgba(232,153,117,0.55)')
   assert.equal(toHex('#E89975'), '#e89975')
 })
 
@@ -452,4 +452,17 @@ test('链接 hover 提升对比度：暗色提亮、亮色压暗（WCAG 方向�
   assert.notEqual(darkHover, '#4995ff', '亮色 hover 不应再向白靠')
   const [hr, hg, hb] = chan(darkHover)
   assert.ok(hr <= 22 && hg <= 119 && hb <= 255, `亮色 hover 应整体压暗，得到 ${darkHover}`)
+})
+
+test('wcagContrast 计算 WCAG 2.x 对比度', () => {
+  // 黑字白底 / 白字黑底 均为 21:1
+  assert.equal(wcagContrast('#000000', '#ffffff'), 21)
+  assert.equal(wcagContrast('#ffffff', '#000000'), 21)
+  // 同色为 1:1
+  assert.equal(wcagContrast('#808080', '#808080'), 1)
+  // 已知经典对：纯蓝 #0000ff 在白底 ~8.59:1；#767676 灰 ~4.54:1（AA）
+  assert.equal(wcagContrast('#0000ff', '#ffffff'), 8.59)
+  assert.equal(wcagContrast('#767676', '#ffffff'), 4.54)
+  // 支持 rgba / 透明度混合 -> 先合成到底色再算
+  assert.ok(wcagContrast('rgba(0,0,0,0.5)', '#ffffff') > wcagContrast('#000000', '#ffffff') / 2)
 })

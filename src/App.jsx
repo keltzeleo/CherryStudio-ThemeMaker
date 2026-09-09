@@ -3,8 +3,8 @@ import { PRESETS, DEFAULT_GLOW } from './theme/presets.js'
 import { ZONES, VAR_LINKS } from './theme/zones.js'
 import { VAR_KEYS, varsToPlan, presetPlan, buildVars, buildPresetCss } from './theme/themeModel.js'
 import { CHERRY_V1_TARGET, CHERRY_V2_TARGET } from './theme/exportV2.js'
-import { hexA, toHex, linkHoverOf, convertColor, varKind, thinkingOf } from './utils/colors.js'
-import { parseColor, roundAlpha } from './utils/colorUtils.js'
+import { linkHoverOf, convertColor, varKind, thinkingOf } from './utils/colors.js'
+import { parseColor, roundAlpha, wcagContrast, toHex, rgbaWithAlpha } from './utils/colorUtils.js'
 
 // 解析一个色值，得到纯 hex 与透明度；跟随 var(--x) 引用到真实颜色，
 // 这样 selector 里显示的颜色才和预览逐像素一致（含 alpha）。
@@ -186,9 +186,9 @@ function App() {
       tgt['--local-thinking-bg'] = thinkingOf(newAccent, other === 'dark').bg
       tgt['--local-thinking-border'] = thinkingOf(newAccent, other === 'dark').border
       tgt['--local-thinking-text'] = thinkingOf(newAccent, other === 'dark').text
-      tgt['--color-active'] = hexA(newAccent, other === 'dark' ? 0.12 : 0.08)
-      tgt['--color-primary-mute'] = hexA(newAccent, 0.3)
-      tgt['--color-primary-soft'] = hexA(newAccent, 0.6)
+      tgt['--color-active'] = rgbaWithAlpha(newAccent, other === 'dark' ? 0.12 : 0.08)
+      tgt['--color-primary-mute'] = rgbaWithAlpha(newAccent, 0.3)
+      tgt['--color-primary-soft'] = rgbaWithAlpha(newAccent, 0.6)
     }
     syncSnapState()
   }
@@ -208,7 +208,7 @@ function App() {
         tgt['--local-thinking-bg'] = thinkingOf(curSnap['--color-primary'], other === 'dark').bg
         tgt['--local-thinking-border'] = thinkingOf(curSnap['--color-primary'], other === 'dark').border
         tgt['--local-thinking-text'] = thinkingOf(curSnap['--color-primary'], other === 'dark').text
-        tgt['--color-active'] = hexA(curSnap['--color-primary'], other === 'dark' ? 0.12 : 0.08)
+        tgt['--color-active'] = rgbaWithAlpha(curSnap['--color-primary'], other === 'dark' ? 0.12 : 0.08)
       }
       syncSnapState()
       toast('已开启统一修改 · 当前配色已同步另一模式')
@@ -226,8 +226,8 @@ function App() {
     })
     const statePatch = { ...o }
     if (o['--color-primary']) {
-      const s = hexA(o['--color-primary'], 0.6)
-      const m = hexA(o['--color-primary'], 0.3)
+      const s = rgbaWithAlpha(o['--color-primary'], 0.6)
+      const m = rgbaWithAlpha(o['--color-primary'], 0.3)
       r.style.setProperty('--color-primary-soft', s)
       r.style.setProperty('--color-primary-mute', m)
       currentVars.current['--color-primary-soft'] = s
@@ -536,7 +536,7 @@ function App() {
     const prevAccent = cssVar('--color-primary')
     const curDark = modeRef.current === 'dark'
     setVar('--color-primary', v)
-    setVar('--color-active', hexA(v, modeRef.current === 'dark' ? 0.12 : 0.08))
+    setVar('--color-active', rgbaWithAlpha(v, modeRef.current === 'dark' ? 0.12 : 0.08))
     if (prevAccent && cssVar('--local-thinking-text') === thinkingOf(prevAccent, curDark).text) {
       setVar('--local-thinking-bg', thinkingOf(v, curDark).bg)
       setVar('--local-thinking-border', thinkingOf(v, curDark).border)
@@ -838,6 +838,15 @@ function App() {
     popoverHint = popoverZone.parts.find(p => p.hint)
   }
 
+  const accentContrast = (() => {
+    const fg = curVars['--color-primary'] || '#8c6a55'
+    const bg = curVars['--color-background'] || '#141414'
+    const ratio = wcagContrast(fg, bg)
+    const tier = ratio >= 4.5 ? 'pass' : ratio >= 3 ? 'ok' : 'fail'
+    const text = ratio >= 4.5 ? 'AA' : ratio >= 3 ? '大字' : '低'
+    return { ratio, tier, text }
+  })()
+
   return (
     <>
       <div className="stage">
@@ -958,6 +967,11 @@ function App() {
           onInput={e => onAccentBallChange(e.target.value)}
           onChange={e => onAccentBallChange(e.target.value)} />
       </button>
+
+      <div className="accent-contrast" title="主色 vs 背景的 WCAG 对比度">
+        <span className={'ac-ratio ac-' + accentContrast.tier}>{accentContrast.ratio}</span>
+        <span className="ac-status" title={accentContrast.text}>{accentContrast.text}</span>
+      </div>
 
       <div className="preset-strip" id="strip" ref={stripRef}
         onPointerDown={onStripPointerDown}>

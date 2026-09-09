@@ -128,6 +128,18 @@ export const hexWithAlpha = (hex, opacity) => {
   return `#${hexByte(r)}${hexByte(g)}${hexByte(b)}${alphaByte(opacity)}`;
 };
 
+/** rgb channels (0-255) → #rrggbb */
+export const rgbToHex = (r, g, b) => `#${hexByte(r)}${hexByte(g)}${hexByte(b)}`;
+
+/**
+ * color + fixed opacity → compact rgba(r,g,b,a) (no spaces).
+ * Legacy Cherry export format — pinned byte-for-byte by export tests.
+ */
+export const rgbaWithAlpha = (color, a) => {
+  const { r, g, b } = parseColor(color);
+  return `rgba(${r},${g},${b},${a})`;
+};
+
 export const rgbaString = (r, g, b, a = 1) => `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${roundAlpha(a, 4)})`;
 
 /** Back-compat aliases */
@@ -151,6 +163,22 @@ export const lightenHex = (hex, percent) => {
 export const darkenHex = (hex, percent) => {
   const { r, g, b } = parseColor(hex);
   return `#${hexByte(r * (1 - percent))}${hexByte(g * (1 - percent))}${hexByte(b * (1 - percent))}`;
+};
+
+const relLum = ({ r, g, b }) => {
+  const f = (c) => {
+    const s = c / 255;
+    return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+};
+
+/** WCAG 2.x contrast ratio (1–21) between two colors. */
+export const wcagContrast = (fg, bg) => {
+  const a = relLum(parseColor(fg));
+  const b = relLum(parseColor(bg));
+  const [hi, lo] = a >= b ? [a, b] : [b, a];
+  return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
 };
 
 /** Blend fg over bg with alpha (alpha composite). Returns #rrggbb. */

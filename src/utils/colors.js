@@ -1,34 +1,58 @@
-export function hexA(hex, a) {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-  if (!m) return hex
-  const [r, g, b] = [m[1], m[2], m[3]].map(x => parseInt(x, 16))
-  return `rgba(${r},${g},${b},${a})`
+// 语义派生层（REFACTOR Step 1）：本文件不再对外提供任何颜色数学，
+// 解析统一走 colorUtils.parseColor（支持 named/hsl/短 hex，无静默默认）。
+// HSL 换算保留一对私有复刻函数（legacyHsl / legacyHslToHex，见下注释），
+// 仅为保持导出字节与重构前逐位一致。Step 2 会把本文件的派生升入
+// tokenRegistry/resolver 成为 recipe，届时这层兼容代码与导出字节一起重新定标。
+import { parseColor, rgbToHex } from './colorUtils.js'
+
+// ── 字节兼容层 ─────────────────────────────────────────────────────────
+// 语义派生的 HSL 数学沿用旧实现的浮点运算顺序（s/l ×100 → 变换 → ÷100
+// 的往返 + q/p 公式），而不是 colorUtils 的 c/x/m 公式：两者数学等价，但
+// 浮点路径不同会在 Math.round(x*255) 的 .5 边界翻动 1 LSB（实测
+// #404c59→#404d59、#62a4ff→#63a4ff 等 4 处）。导出字节被测试与
+// REFACTOR 护栏钉死，故保留这层复刻；待 Step 2 派生升入 resolver 时
+// 与导出一起按 colorUtils 公式重新定标（0–1 约定由此进入）。
+const legacyHsl = (color) => {
+  const { r, g, b } = parseColor(color)
+  const rn = r / 255, gn = g / 255, bn = b / 255
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn)
+  let h = 0, s = 0
+  const l = (max + min) / 2
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case rn: h = (gn - bn) / d + (gn < bn ? 6 : 0); break
+      case gn: h = (bn - rn) / d + 2; break
+      default: h = (rn - gn) / d + 4; break
+    }
+    h /= 6
+  }
+  return { h: h * 360, s: s * 100, l: l * 100 }
 }
 
-// 带透明度的颜色：hex 走 hexA；已是 rgba(...) 则重写其 alpha。
-export function alphaOf(color, a) {
-  const m = /^rgba?\(\s*(\d+)\s*[,\s/]\s*(\d+)\s*[,\s/]\s*(\d+)/.exec(color || '')
-  if (m) return `rgba(${m[1]},${m[2]},${m[3]},${a})`
-  return hexA(color, a)
-}
-
-export function toHex(v) {
-  const m = /^#?([a-f\d]{6})$/i.exec(v)
-  if (m) return '#' + m[1].toLowerCase()
-  const rg = /rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/.exec(v)
-  if (rg) return '#' + [1, 2, 3].map(i => (+rg[i].replace(/[^\d]/g, '')).toString(16).padStart(2, '0')).join('')
-  return '#8c6a55'
-}
-
-export function darken(hex, f) {
-  const c = toHex(hex).slice(1)
-  const [r, g, b] = [0, 2, 4].map(i => parseInt(c.slice(i, i + 2), 16))
-  return '#' + [r, g, b].map(x => Math.max(0, Math.round(x * (1 - f))).toString(16).padStart(2, '0')).join('')
+const legacyHslToHex = (h, s, l) => {
+  const hn = h / 360, sn = s / 100, ln = l / 100
+  let r, g, b
+  if (sn === 0) { r = g = b = ln }
+  else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1
+      if (t > 1) t -= 1
+      if (t < 1 / 6) return p + (q - p) * 6 * t
+      if (t < 1 / 2) return q
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
+      return p
+    }
+    const q = ln < 0.5 ? ln * (1 + sn) : ln + sn - ln * sn
+    const p = 2 * ln - q
+    r = hue2rgb(p, q, hn + 1 / 3); g = hue2rgb(p, q, hn); b = hue2rgb(p, q, hn - 1 / 3)
+  }
+  return rgbToHex(r * 255, g * 255, b * 255)
 }
 
 export function isDark(hex) {
-  const c = toHex(hex).slice(1)
-  const [r, g, b] = [0, 2, 4].map(i => parseInt(c.slice(i, i + 2), 16))
+  const { r, g, b } = parseColor(hex)
   return (r + g + b) / 3 < 140
 }
 
@@ -45,17 +69,17 @@ export function textTiers(bg) {
 // dark：底色朝该色相的暗灰、文字向更灰淡（降饱和提亮）的版本；
 // light：底色淡淡的米色系暖白、文字向更暗灰的版本。
 export function thinkingOf(accent, dark) {
-  const h = hexToHsl(accent)
+  const { h, s } = legacyHsl(accent)
   return dark
     ? {
-        bg: hslToHex(h.h, Math.min(h.s, 10), 19),
-        border: hslToHex(h.h, Math.min(h.s, 14), 30),
-        text: hslToHex(h.h, Math.min(h.s, 24), 66),
+        bg: legacyHslToHex(h, Math.min(s, 10), 19),
+        border: legacyHslToHex(h, Math.min(s, 14), 30),
+        text: legacyHslToHex(h, Math.min(s, 24), 66),
       }
     : {
-        bg: hslToHex(h.h, Math.min(h.s, 12), 96),
-        border: hslToHex(h.h, Math.min(h.s, 16), 89),
-        text: hslToHex(h.h, Math.min(h.s, 24), 36),
+        bg: legacyHslToHex(h, Math.min(s, 12), 96),
+        border: legacyHslToHex(h, Math.min(s, 16), 89),
+        text: legacyHslToHex(h, Math.min(s, 24), 36),
       }
 }
 
@@ -79,7 +103,7 @@ const SCHEMES = {
 
 // 把某个面在暗/亮两模式下译为具体的莫兰迪色（饱和度 ≤26，引用竖线用 20 稍作强调）。
 function face(band, H, dark) {
-  const at = (dH, s, l) => hslToHex((H + dH) % 360, s, l)
+  const at = (dH, s, l) => legacyHslToHex((H + dH) % 360, s, l)
   switch (band) {
     case 'table':        return dark ? at(0, 16, 26) : at(0, 18, 93)
     case 'tableText':    return dark ? at(0, 16, 82) : at(0, 18, 34)
@@ -94,7 +118,7 @@ function face(band, H, dark) {
 }
 
 export function harmonySurface(accent, mode, scheme = 'tetradic') {
-  const H = hexToHsl(accent).h
+  const H = legacyHsl(accent).h
   const dark = mode === 'dark'
   const [t, q, n, c] = SCHEMES[scheme] || SCHEMES.tetradic
   return {
@@ -111,55 +135,12 @@ export function harmonySurface(accent, mode, scheme = 'tetradic') {
 }
 
 export function linkHoverOf(hex, dark) {
-  const c = toHex(hex).slice(1)
-  const [r, g, b] = [0, 2, 4].map(i => parseInt(c.slice(i, i + 2), 16))
+  const { r, g, b } = parseColor(hex)
   // Hover 必须提升与背景的对比度，而不是一味向白靠：暗色主题背景深 → 提亮链接，
   // 亮色主题背景浅 → 压暗链接。若只在亮色主题下也向白靠，链接 hover 会跌破 WCAG
   // AA（例如 #1677ff → #4995ff 在纯白底上从 4.1:1 掉到 3.0:1）。
   const shift = dark ? (x) => x + (255 - x) * 0.22 : (x) => x * (1 - 0.22)
-  return '#' + [r, g, b].map(x => Math.round(shift(x)).toString(16).padStart(2, '0')).join('')
-}
-
-export function hexToHsl(hex) {
-  const c = toHex(hex).slice(1)
-  const r = parseInt(c.slice(0, 2), 16) / 255
-  const g = parseInt(c.slice(2, 4), 16) / 255
-  const b = parseInt(c.slice(4, 6), 16) / 255
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  let h, s, l = (max + min) / 2
-  if (max === min) { h = s = 0 }
-  else {
-    const d = max - min
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break
-      case g: h = (b - r) / d + 2; break
-      case b: h = (r - g) / d + 4; break
-    }
-    h /= 6
-  }
-  return { h: h * 360, s: s * 100, l: l * 100 }
-}
-
-export function hslToHex(h, s, l) {
-  h /= 360; s /= 100; l /= 100
-  let r, g, b
-  if (s === 0) { r = g = b = l }
-  else {
-    const hue2rgb = (p, q, t) => {
-      if (t < 0) t += 1
-      if (t > 1) t -= 1
-      if (t < 1 / 6) return p + (q - p) * 6 * t
-      if (t < 1 / 2) return q
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
-      return p
-    }
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s
-    const p = 2 * l - q
-    r = hue2rgb(p, q, h + 1 / 3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1 / 3)
-  }
-  return '#' + [r, g, b].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('')
+  return rgbToHex(shift(r), shift(g), shift(b))
 }
 
 // 文字档位：按 alpha 识别 t1/t2/t3。文字必须与背景分层共享基色、只降透明度，
@@ -184,11 +165,10 @@ export function convertColor(hex, kind, toMode) {
   if (kind === 'text') {
     // rgba 文字档位必须先于 # 短路处理，否则暗色 t2/t3（rgba）会被原样写进亮色。
     const tier = textTierOf(hex)
-    const key = (toMode === 'light') ? 't' + tier : 't' + tier
-    return TEXT_TIERS[toMode]?.[key] || hex
+    return TEXT_TIERS[toMode]?.['t' + tier] || hex
   }
   if (!hex || !hex.startsWith('#')) return hex
-  const hsl = hexToHsl(hex)
+  const { h, s, l } = legacyHsl(hex)
   const toLight = (toMode === 'light')
   switch (kind) {
     case 'accent':
@@ -196,18 +176,18 @@ export function convertColor(hex, kind, toMode) {
       return hex
     case 'bg':
       return toLight
-        ? hslToHex(hsl.h, Math.min(hsl.s, 12), 96)
-        : hslToHex(hsl.h, Math.min(hsl.s, 10), 17)
+        ? legacyHslToHex(h, Math.min(s, 12), 96)
+        : legacyHslToHex(h, Math.min(s, 10), 17)
     case 'panel':
       return toLight
-        ? hslToHex(hsl.h, Math.min(hsl.s, 10), 100)
-        : hslToHex(hsl.h, Math.min(hsl.s, 8), 19)
+        ? legacyHslToHex(h, Math.min(s, 10), 100)
+        : legacyHslToHex(h, Math.min(s, 8), 19)
     case 'link':
       // 链接与 accent 同属「彩色」类，跨模式只做明度平移、保留色相与饱和度：
       // 暗色主题链接更亮 → 亮色主题需压暗，反之提亮，而不是像 panel 那样洗白。
-      return hslToHex(hsl.h, Math.max(55, hsl.s), toLight ? Math.max(35, hsl.l - 16) : Math.min(72, hsl.l + 16))
+      return legacyHslToHex(h, Math.max(55, s), toLight ? Math.max(35, l - 16) : Math.min(72, l + 16))
     case 'syntax':
-      return hslToHex(hsl.h, hsl.s, toLight ? Math.max(30, hsl.l - 20) : Math.min(75, hsl.l + 15))
+      return legacyHslToHex(h, s, toLight ? Math.max(30, l - 20) : Math.min(75, l + 15))
     default:
       return hex
   }

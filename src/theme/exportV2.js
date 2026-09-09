@@ -81,8 +81,7 @@
  * We read EXACTLY the same `fieldsOf(buildVars(...))` values the preview area
  * renders, so 「所见 == 所得」 holds for v2 too.
  */
-import { parseColor } from '../utils/colorUtils.js'
-import { hexA, darken } from '../utils/colors.js'
+import { parseColor, darkenHex, rgbaWithAlpha } from '../utils/colorUtils.js'
 
 export const CHERRY_V1_TARGET = 'v1.9.12'
 export const CHERRY_V2_TARGET = 'v2.0.9'
@@ -116,7 +115,7 @@ function tokenBlock(selector, pairs) {
 function v2Tokens(f) {
   const primary = f.primary
   const fg = foregroundOf(primary)
-  const primaryHover = darken(primary, 0.08)
+  const primaryHover = darkenHex(primary, 0.08)
   return [
     // ── Layer 1 · `--color-*` public contract (shadcn / Tailwind v4 utilities) ──
     ['--color-background', f.bg],
@@ -131,8 +130,8 @@ function v2Tokens(f) {
     ['--color-primary', primary],
     ['--color-primary-foreground', fg],
     ['--color-primary-hover', primaryHover],
-    ['--color-primary-soft', hexA(primary, 0.6)],
-    ['--color-primary-mute', hexA(primary, 0.3)],
+    ['--color-primary-soft', rgbaWithAlpha(primary, 0.6)],
+    ['--color-primary-mute', rgbaWithAlpha(primary, 0.3)],
     ['--color-secondary', f.soft],
     ['--color-secondary-foreground', f.text],
     ['--color-secondary-hover', f.hover],
@@ -238,7 +237,7 @@ function v2Tokens(f) {
     ['--reference-subtle', f.refBg],
     ['--highlight', primary],
     ['--highlight-foreground', fg],
-    ['--highlight-accent', hexA(primary, 0.3)],
+    ['--highlight-accent', rgbaWithAlpha(primary, 0.3)],
     ['--chat-user', f.userBg],
     // Thinking box — VERIFIED against real ThinkingBlock.tsx: the expanded
     // content wrapped in [data-ui="part:message-reasoning"] uses Tailwind
@@ -256,14 +255,14 @@ function v2Tokens(f) {
     ['--table-row-hover', f.soft],
     // The preview's own CSS proves the mapping (App.css): `.topic:hover` uses
     // `--color-hover` (f.hover), `.topic.on` (the SELECTED conversation row)
-    // uses `--color-primary-soft` (hexA(primary, 0.6)) — an accent-tinted
+    // uses `--color-primary-soft` (rgbaWithAlpha(primary, 0.6)) — an accent-tinted
     // highlight, not a neutral wash. Mapping `-selected` to f.hover/f.soft
     // (as before) produced a near-invisible 4–6% neutral tint that looked
     // indistinguishable from the unselected state.
     ['--resource-list-row-hover', f.hover],
     ['--resource-list-row-active', f.active],
     ['--resource-list-row-active-foreground', f.text],
-    ['--resource-list-row-selected', hexA(primary, 0.6)],
+    ['--resource-list-row-selected', rgbaWithAlpha(primary, 0.6)],
     ['--resource-list-row-selected-foreground', f.text],
     // Confirmed via live DOM: v2.0.9 scrollbars read bare `--scrollbar-thumb` /
     // `--scrollbar-thumb-hover` (Tailwind arbitrary-value `bg-[var(--scrollbar-thumb)]`
@@ -313,7 +312,7 @@ export function buildV2Css(dk, lt, meta = {}) {
   // There is NO per-slot nth-child hover rainbow in v2 — the glow belongs to the
   // selected item. We drive the whole glow from the accent so it matches preview.
   const accent = dk.primary || lt.primary
-  const glowAlpha = (c, a) => hexA(c, a)
+  const glowAlpha = (c, a) => rgbaWithAlpha(c, a)
   const glowTokens = (light) => {
     const c = light ? (lt.primary || accent) : accent
     return [

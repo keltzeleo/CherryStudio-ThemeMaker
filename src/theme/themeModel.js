@@ -1,4 +1,4 @@
-import { hexA, isDark, textTiers, thinkingOf, linkHoverOf, harmonySurface } from '../utils/colors.js'
+import { isDark, textTiers, thinkingOf, linkHoverOf, harmonySurface } from '../utils/colors.js'
 import { DEFAULT_GLOW } from './presets.js'
 
 // Every CSS var the preview renders, snapshot/undo/redo tracks, and the
@@ -63,8 +63,8 @@ export function buildVars(plan, glow) {
     '--color-text-2': s.text2 || tt.t2,
     '--color-text-3': text3,
     '--color-primary': s.accent,
-    '--color-primary-soft': hexA(s.accent, 0.6),
-    '--color-primary-mute': hexA(s.accent, 0.3),
+    '--color-primary-soft': rgbaWithAlpha(s.accent, 0.6),
+    '--color-primary-mute': rgbaWithAlpha(s.accent, 0.3),
     '--color-link': s.link,
     '--chat-background-ai': s.ai || (dk ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)'),
     '--chat-background-user': s.user,
@@ -88,7 +88,7 @@ export function buildVars(plan, glow) {
     '--kw-name': s.kwName || harm.codeParam,
     '--kw-punct': s.kwPunct || text3,
     '--color-hover': s.hover || (dk ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)'),
-    '--color-active': s.active || hexA(s.accent, dk ? 0.12 : 0.08),
+    '--color-active': s.active || rgbaWithAlpha(s.accent, dk ? 0.12 : 0.08),
     '--color-border': s.border || (dk ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)'),
     '--color-border-soft': s.borderSoft || (dk ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)'),
     '--color-link-hover': s.linkHover || linkHoverOf(s.link, dk),
@@ -124,7 +124,7 @@ export function varsToCss(vars) {
 import { buildExportCss } from './exportCss.js'
 import { buildV2Css, CHERRY_V1_TARGET, CHERRY_V2_TARGET } from './exportV2.js'
 import { baseDefaultTheme } from './defaultTheme.js'
-import { parseColor } from '../utils/colorUtils.js'
+import { parseColor, rgbaWithAlpha } from '../utils/colorUtils.js'
 
 // 把一个 rgba/hex 颜色拆成 { hex, alpha }，用于把预览的最终 rgba 值还原为
 // registry 的「纯色 + 透明度」两步表示，保证 resolver 重算后与预览逐字节一致。
