@@ -386,7 +386,15 @@ ${glowTokens(false)}
   color: var(--thinking-text) !important;
 }
 
-.markdown pre, .tiptap pre, .shiki, .prose pre {
+/* Chat code fences and the artifact code viewer alike render through
+ * CodeViewer.tsx, which sets its root className to code-viewer in EVERY
+ * branch (verified in source: one branch sets only code-viewer; the other
+ * sets properties.class-or-'shiki' PLUS code-viewer — a bare shiki class
+ * token only shows up in that second branch, when Shiki's own theme
+ * registration didn't supply properties.class). shiki/tiptap/prose below
+ * are kept as defensive fallbacks for surfaces we haven't independently
+ * verified, not as the primary hook. */
+.markdown pre, .tiptap pre, .shiki, .prose pre, .code-viewer {
   background-color: var(--code-block) !important;
   color: var(--foreground) !important;
   border: 1px solid var(--border) !important;
