@@ -297,6 +297,20 @@ function App() {
       syncToOtherMode('--color-primary', hex, 'accent')
       return
     }
+    if (p.v === '--color-background-soft') {
+      // --sidebar defaults to --color-background-soft (rail == list panel)
+      // ONLY at the moment a preset first loads — buildVars() bakes that
+      // fallback into its own literal --sidebar value, and varsToPlan()
+      // then always captures --sidebar as an explicit field forever after,
+      // freezing the link. Re-derive --sidebar here too, but only while it
+      // was still actually tracking soft (never independently customized).
+      const prevSoft = cssVar('--color-background-soft')
+      const sidebarWasTrackingSoft = cssVar('--sidebar') === prevSoft
+      setVar('--color-background-soft', val)
+      if (sidebarWasTrackingSoft) setVar('--sidebar', val)
+      syncToOtherMode('--color-background-soft', val, varKind('--color-background-soft'))
+      return
+    }
     setVar(p.v, p.kind === 'range' ? val + (p.unit || '') : val)
     if (p.kind !== 'range') syncToOtherMode(p.v, val, varKind(p.v))
   }
