@@ -410,7 +410,15 @@ ${glowTokens(false)}
   background: transparent !important;
   color: var(--foreground) !important;
 }
-.markdown p code, .markdown li code, .markdown code:not(pre code), .tiptap code, .prose code:not(pre code) {
+/* Inline code (CodeBlock.tsx's plain, non-fenced render branch) renders a
+ * bare <code> with a fixed structural class string (whitespace/padding/
+ * font-size only — no color utility at all) and, in the currently-installed
+ * build, a stable data-ui="chat.code-block" attribute not yet present in
+ * the public source tree we cross-referenced (verified against a real
+ * user-supplied DOM snippet). Since it carries no color of its own, the
+ * ancestor-based .markdown/.tiptap/.prose selectors below are kept as
+ * fallbacks, but the attribute is the reliable, structure-independent hook. */
+.markdown p code, .markdown li code, .markdown code:not(pre code), .tiptap code, .prose code:not(pre code), code[data-ui="chat.code-block"] {
   background-color: var(--inline-code) !important;
   color: var(--inline-code-foreground) !important;
   border-radius: 6px !important;
