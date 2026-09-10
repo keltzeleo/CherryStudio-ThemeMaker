@@ -57,6 +57,15 @@
 | 最近使用顏色 | 中 | localStorage 陣列 + popover swatch |
 | 導入既有 CSS | 高 | 需 `resolver` 逆函數，處理不完整 CSS 回填與 alpha 正規化 |
 
+### P1 補充（2026-09-10 對話中提出，尚未動工）
+
+| 項目 | 狀態 | 備註 |
+|---|---|---|
+| Popover 數值輸入框 | 待做 | 色塊旁邊加 R/G/B/alpha 數字輸入，取代純拖色域；校驗 RGB ≤255、alpha ≤1.0，超界報錯 |
+| 順藤摸瓜排查 | 待做 | 系統性找「看起來可點、實際沒接上真實 DOM／CSS」的元素，比照 inline-code 那次的排查方式 |
+| Popover 拖拽 | 構想中，未拍板 | popover 標題列的三橫杆目前純裝飾，跟 dock 用的是同一個 SVG grip 圖示；若真的做成可拖拽，行為要跟現有 `positionPopover(x,y)` 的自動定位協調（比如切換 zone 時要不要保留上次拖的位置） |
+| Ceramic / Morandi / Paper 的 accent | 待決定 | 這三個內建 preset 的 accent 在某次加 v2.0.9 導出功能的 commit（322a686）裡被順手換掉，跟 Kel Meow 同一批「未經確認的改動」；目前保留現狀，等使用者要不要也復原 |
+
 ### P2 — 打磨（非必須）
 
 - 原地編輯模式的「一鍵還原」進行中狀態條（目前只能逐次 undo）
