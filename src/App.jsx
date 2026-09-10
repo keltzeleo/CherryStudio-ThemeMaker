@@ -179,7 +179,6 @@ function App() {
   const popoverRef = useRef(null)
   const drawerLeaveTimer = useRef(null)
   const leaveNameInputRef = useRef(null)
-  const accentInputRef = useRef(null)
 
   useEffect(() => { presetsRef.current = presets })
   useEffect(() => { selNameRef.current = selName })
@@ -325,11 +324,9 @@ function App() {
     return v
   }
 
-  // Shared by setVal's --color-primary branch and onAccentBallChange (the
-  // dedicated ACCENT-ball picker) — these were two separate copies of the
-  // same "re-derive dependents still tracking accent's default" logic that
-  // had drifted out of sync (only one of them knew about table/reference/
-  // kw-name). One shared implementation now; fixing it once fixes both.
+  // Re-derives every dependent that's still tracking accent's default
+  // (thinking box, table header, reference block, kw-name) — never one
+  // the user independently customized via its own zone.
   const applyAccentDependents = (prevAccent, hex, curDark) => {
     if (!prevAccent) return
     if (cssVar('--local-thinking-text') === thinkingOf(prevAccent, curDark).text) {
@@ -365,6 +362,7 @@ function App() {
       const prevAccent = cssVar('--color-primary')
       const curDark = modeRef.current === 'dark'
       setVar('--color-primary', hex)
+      setVar('--color-active', rgbaWithAlpha(hex, curDark ? 0.12 : 0.08))
       applyAccentDependents(prevAccent, hex, curDark)
       syncToOtherMode('--color-primary', hex, 'accent')
       return
@@ -594,19 +592,6 @@ function App() {
     toast(m === 'dark' ? '已切到 Dark' : '已切到 Light')
   }
 
-  const startEdit = afterFn => {
-    if (baseRef.current === null) {
-      const selP = presetsRef.current.find(x => x.name === selNameRef.current)
-      if (selP && selP.own && editChoiceRef.current === null) {
-        setEditChoiceName(selP.name)
-        setEditChoiceMask(true)
-        editChoicePendingRef.current = afterFn
-        return false
-      }
-    }
-    return true
-  }
-
   const chooseEditInPlace = () => {
     editChoiceRef.current = 'edit'
     inPlaceRef.current = true
@@ -629,20 +614,6 @@ function App() {
     editChoicePendingRef.current = null
     if (fn) fn()
     editChoiceRef.current = null
-  }
-
-  const onAccentBallChange = v => {
-    if (!startEdit(() => onAccentBallChange(v))) return
-    initDraftBase()
-    const prevAccent = cssVar('--color-primary')
-    const curDark = modeRef.current === 'dark'
-    setVar('--color-primary', v)
-    setVar('--color-active', rgbaWithAlpha(v, modeRef.current === 'dark' ? 0.12 : 0.08))
-    applyAccentDependents(prevAccent, v, curDark)
-    syncToOtherMode('--color-primary', v, 'accent')
-    setTick(t => t + 1)
-    commitHistory()
-    toast('主色已更新' + (syncRef.current ? ' · 已同步另一模式' : ''))
   }
 
   const copyPreset = name => {
@@ -1060,14 +1031,11 @@ function App() {
         </main>
       </div>
 
-      <button className="accent-ball pz" data-zone="accent" title="主色 Accent · 点我改主色" onClick={() => accentInputRef.current && accentInputRef.current.click()}>
+      <button className="accent-ball pz" data-zone="accent" title="主色 Accent · 点我改主色">
         <span className="accent-ball-inner">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" /></svg>
           <span className="accent-ball-label">ACCENT</span>
         </span>
-        <input type="color" id="accentBallInput" ref={accentInputRef}
-          onInput={e => onAccentBallChange(e.target.value)}
-          onChange={e => onAccentBallChange(e.target.value)} />
       </button>
 
       <div className="accent-contrast" title="主色 vs 背景的 WCAG 对比度">
