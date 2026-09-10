@@ -63,6 +63,36 @@ const CODE_LINES = [
   <Kw kw="comment" key="l14">// string · literal · comment · name · keyword · punct — all editable</Kw>,
 ]
 
+const clampNum = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
+
+// R/G/B/alpha 数值输入：越界即时夹回合法范围（0–255 / 0–1），配合原生
+// number 输入的 min/max 触发 :invalid 样式做「报错」提示，不额外弹提示框。
+function RgbaFields({ resolved, onChange, onCommit }) {
+  const { r, g, b } = parseColor(resolved)
+  const alpha = alphaOf(resolved)
+  const setChannel = (key, n) => {
+    const rr = Math.round(clampNum(key === 'r' ? n : r, 0, 255))
+    const gg = Math.round(clampNum(key === 'g' ? n : g, 0, 255))
+    const bb = Math.round(clampNum(key === 'b' ? n : b, 0, 255))
+    const aa = clampNum(key === 'a' ? n : alpha, 0, 1)
+    onChange(aa >= 1 ? hexOf(`rgb(${rr},${gg},${bb})`) : `rgba(${rr},${gg},${bb},${roundAlpha(aa)})`)
+  }
+  const field = (key, val, max, step) => (
+    <input key={key} type="number" className="rgbanum" min="0" max={max} step={step || 1} value={val}
+      title={key === 'a' ? 'Alpha（0–1）' : key.toUpperCase() + '（0–255）'}
+      onChange={e => { const n = parseFloat(e.target.value); if (!Number.isNaN(n)) setChannel(key, n) }}
+      onBlur={onCommit} />
+  )
+  return (
+    <span className="rgbaFields">
+      {field('r', r, 255)}
+      {field('g', g, 255)}
+      {field('b', b, 255)}
+      {field('a', roundAlpha(alpha), 1, 0.01)}
+    </span>
+  )
+}
+
 function ColorRow({ part, value, onChange, onCommit }) {
   const resolved = resolveColor(value)
   const hex = hexOf(resolved)
@@ -82,6 +112,7 @@ function ColorRow({ part, value, onChange, onCommit }) {
           onInput={e => onChange(withAlpha(hex, parseFloat(e.target.value)))}
           onBlur={onCommit} />
       )}
+      <RgbaFields resolved={resolved} onChange={onChange} onCommit={onCommit} />
     </div>
   )
 }

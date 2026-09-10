@@ -468,7 +468,7 @@ body.pick .preset-scroll{pointer-events:none}
 .popover .ph svg{width:13px;height:13px;stroke:var(--color-text-2);stroke-width:1.7;fill:none}
 .popover .ph .t{font-size:12px;font-weight:600}
 .popover .ph .gid{font:500 10px/1 system-ui;color:var(--color-text-3);letter-spacing:.04em;margin-left:auto}
-.popover .prow{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.popover .prow{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
 .popover .prow:hover{background:var(--color-hover)}
 .popover .prow .chip{
   width:22px;height:22px;border-radius:6px;flex:0 0 22px;border:1px solid var(--color-border-soft);
@@ -481,6 +481,16 @@ body.pick .preset-scroll{pointer-events:none}
 .popover .prow input{width:40px;height:24px;padding:0;border:none;background:none;border-radius:6px;cursor:pointer}
 .popover .prow input[type="range"]{width:auto;flex:1;min-width:60px;accent-color:var(--color-primary);cursor:pointer}
 .popover .prow input[type="range"].alpha{flex:0 0 46px;min-width:0;width:46px}
+.popover .prow .rgbaFields{display:flex;gap:4px;flex:1 0 100%;padding-left:31px;cursor:auto}
+.popover .prow .rgbanum{
+  width:34px;height:20px;padding:0 2px;flex:0 0 34px;border:1px solid var(--color-border-soft);
+  background:var(--color-background);border-radius:5px;cursor:text;
+  font:500 10px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--color-text-2);text-align:center;
+}
+.popover .prow .rgbanum:last-child{width:42px;flex-basis:42px}
+.popover .prow .rgbanum:focus{outline:none;border-color:var(--color-primary);color:var(--color-text)}
+.popover .prow .rgbanum:invalid{border-color:#e5484d;color:#e5484d}
+.popover .prow .rgbanum::-webkit-inner-spin-button,.popover .prow .rgbanum::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .popover .pgroup{font:600 10px/1 system-ui;letter-spacing:.06em;color:var(--color-text-3);margin:9px 4px 4px}
 .popover .pgroup:first-child{margin-top:0}
 .popover .pnote{font-size:10px;color:var(--color-text-3);margin-top:8px;padding-top:8px;border-top:1px solid var(--color-border-soft);line-height:1.5}
