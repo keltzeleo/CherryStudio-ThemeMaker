@@ -42,6 +42,11 @@ export const PRESETS = [
       text2:'rgba(62,62,71,.8)', hover:'rgba(145,175,110,.13)', active:'rgba(112,169,157,.08)',
       tableHeader:'#bcb7bd', tableRowBg:'rgba(225,234,249,0)', thinking:'#f4f6f4', thinkingText:'#566c67',
       reference:'#a28781', referenceText:'#5a473a', referenceBg:'#eadfdc' } },
+  { name:'tangerine chachor', cert:'自建', own:true, scheme:'analogous', glow:['#BE8B96','#A78CA6','#7E94BC','#CBA98B','#8FB49C'],
+    dark:{ bg:'#2b2628', soft:'#332d30', mute:'#3a3438', accent:'#BE8B96', link:'#338cff', ai:'rgba(190,139,150,.05)', user:'rgba(190,139,150,.08)', userText:'#F2ECEE',
+      reference:'#cc8a52', referenceText:'#e6d2bb', referenceBg:'#3d2e22' },
+    light:{ bg:'#f8f3f4', soft:'#f2eaec', mute:'#e9e1e4', accent:'#BE8B96', link:'#1677ff', ai:'rgba(190,139,150,.03)', user:'rgba(190,139,150,.045)', userText:'#241f21',
+      reference:'#c17d47', referenceText:'#6b4a2e', referenceBg:'#f8ecdd' } },
 ]
 
 export const DEFAULT_GLOW = ['#BE8B96','#A78CA6','#7E94BC','#CBA98B','#8FB49C']
