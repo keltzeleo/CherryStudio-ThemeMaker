@@ -191,9 +191,6 @@ test('导出值 == 预览 buildVars 输出（所见 == 所得，官方名 ↔ �
   const MAP = {
     '--color-background': '--color-background',
     '--color-background-soft': '--color-background-soft',
-    '--color-primary': '--color-primary',
-    '--color-primary-soft': '--color-primary-soft',
-    '--color-primary-mute': '--color-primary-mute',
     '--color-text-1': '--color-text',
     '--color-link': '--color-link',
     '--color-hover': '--color-hover',
@@ -208,8 +205,21 @@ test('导出值 == 预览 buildVars 输出（所见 == 所得，官方名 ↔ �
     '--color-reference-background': '--color-reference-background',
     '--local-thinking-text': '--local-thinking-text',
   }
+  // --color-primary/-soft/-mute are `valueMode: 'shared'` in tokenRegistry.js —
+  // verified against the real official source (color.css): v1.9.12 genuinely
+  // declares ONE `--color-primary` for both modes (see the un-scoped
+  // `body[theme-mode] { --primary: ...; --primary-color: ...; }` block in
+  // exportCss.js), not a dark/light pair. themeFromFields() feeds it from
+  // `dk.primary` only. For the 12 presets whose light/dark accent are equal
+  // this is indistinguishable from a per-mode value; tzeDimensions is the
+  // first preset with a deliberately different light accent (per the user's
+  // hand-tuned design — v2.0.9 supports this via `:root:root`/`:root.dark`,
+  // v1.9.12 structurally cannot), so these three are checked against dark's
+  // value specifically instead of "whichever mode we're in".
+  const SHARED_FROM_DARK = ['--color-primary', '--color-primary-soft', '--color-primary-mute']
   for (const p of PRESETS) {
     const css = buildPresetCss(p)
+    const darkPreview = buildVars(presetPlan(p, 'dark'), p.glow)
     for (const mode of ['dark', 'light']) {
       const src = buildVars(presetPlan(p, mode), p.glow)
       const block = mode === 'dark' ? { ...layer1(css, 'dark'), ...layer2(css, 'dark') }
@@ -217,6 +227,10 @@ test('导出值 == 预览 buildVars 输出（所见 == 所得，官方名 ↔ �
       for (const [cherryName, previewName] of Object.entries(MAP)) {
         if (!(cherryName in block)) continue
         assert.equal(normColor(block[cherryName]), normColor(src[previewName]), `${p.name}/${mode} ${cherryName} 导出与预览不同源`)
+      }
+      for (const cherryName of SHARED_FROM_DARK) {
+        if (!(cherryName in block)) continue
+        assert.equal(normColor(block[cherryName]), normColor(darkPreview[cherryName]), `${p.name}/${mode} ${cherryName}（v1.9.12 全局共享，应恒等于 dark 值）`)
       }
     }
   }

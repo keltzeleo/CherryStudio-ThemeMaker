@@ -54,6 +54,13 @@
 }
 ```
 
+> ⚠️ **2026-09-10 更正**：这条规则本身没错，但不够——真实当前版本的 DOM 里，
+> `[data-resource-list-pane]` 这层要么不存在、要么是透明的外层祖先，真正决定
+> 肉眼看到什么颜色的是它内部**另一个**元素 `[data-ui="chat.topic-list"]`
+> （`data-testid="resource-list-topic"`），这层直接套了 Tailwind 的 `bg-background`
+> （跟聊天区同一个颜色），不透明地整个盖住外层。第 4、7 节里"已验证正确"的结论
+> 是当时用旧版/不完整的 DOM 数据得出的，**是错的**。完整更正见第 9 节。
+
 ## 4. 已验证正确、无需再改的部分
 
 跑真实 DOM 诊断脚本确认：`.markdown th` 选择器**确实命中真实表格表头元素**
@@ -115,9 +122,11 @@ token，并加穿透规则（利用 `data-ui="part:message-reasoning"` 这个稳
 
 ## 7. 已验证正确、无需再改的部分（追加）
 
-- **会话列表面板**：真实 DOM 里直接查 `[data-resource-list-pane]`，
+- **会话列表面板**：~~真实 DOM 里直接查 `[data-resource-list-pane]`，
   `backgroundColor: rgb(238,233,226)` = `#eee9e2`，跟当时预设导出的 `--sidebar`
-  逐字节一致，`matches` 也确认规则命中。**这项是对的。**
+  逐字节一致，`matches` 也确认规则命中。这项是对的。~~
+  **2026-09-10 更正：上面这个结论是错的**，当时查的那层不是实际盖住画面的那层。
+  真正生效的元素、以及最终修复，见第 9 节。
 - **图标栏（最左侧窄条）背景是透明的（`rgba(0,0,0,0)`），这是 Mac 原生窗口的
   设计**：Cherry 在 Mac 上默认给图标栏用系统毛玻璃透明效果（源码里
   `isMacTransparentWindow ? 'bg-transparent' : 'bg-sidebar'`），不是我们主题没套上。
@@ -143,24 +152,135 @@ token，并加穿透规则（利用 `data-ui="part:message-reasoning"` 这个稳
 - `markdown-alert`（GitHub 风格 `[!NOTE]` 等提示块）加了双类名穿透，因为原生用
   `prefers-color-scheme` 跟系统主题走、不跟 App 自己的明暗切换（DevTools 已验证生效）
 
+## 9. 2026-09-10 补充：系统性联动审查，修了一整类"改了没反应"的 bug
+
+这一批不是零散小修，是用户指出"只要用户一改颜色，所有联动数值都要跟着一次过更新"
+这个长期被忽略的要求后，回头系统排查出的一整类同源问题，外加两个只能靠真实 DOM
+才能发现的选择器错位。全部改动仅涉及 `App.jsx`、`colors.js`、`exportV2.js`，
+45 → 46 个 Node 测试、12 个 Vitest 测试全程保持通过，多数逐条用真实浏览器 /
+真实 DOM 验证过。
+
+### 9.1【根因级 bug，已修复】`scheme`（配色方案）在 5 处调用点被静默丢弃
+
+`harmonySurface(accent, mode, scheme)` 根据 `scheme`（`tetradic`/`analogous`/
+`monochrome`/`complementary`/`triadic`/`splitComp`/`square`）算出表格表头、
+引用块、思考框、代码参数名这几个"跟随 accent 色相联动"的颜色。问题是
+`App.jsx` 里有 5 处独立的"从 preset 拿 plan"代码，全都是各自手写的
+`p.dark || p` / `p.light || p` 这类临时拼法，只从 preset 顶层结构里拿
+`dark`/`light` 字段，从来没把同层的 `scheme` 字段一起带上——`harmonySurface`
+拿到 `undefined` 的 `scheme`，默默 fallback 成默认值 `'tetradic'`。
+
+**影响面**：13 个预设里 12 个的表格表头/引用块/代码参数名颜色全部算错
+（只有本来就用 `tetradic` 的 Ceramic 巧合看起来对）。
+
+**发现方式**：Theme Station 自己预览区显示的引用色，跟直接拿同样的 accent+mode
+调用 `harmonySurface()` 算出来的颜色对不上（浏览器里是偏绿的 `#5f8156`，
+脚本里是偏棕的 `#816d56`）——证明不是数学算错，是实际运行路径没把 `scheme`
+传进去。
+
+**修复**：新增 `presetPlan(p, modeKey)` 作为唯一正确的"从 preset 取 plan"入口
+（会带上 `scheme`），把 5 个调用点（`applyPreset`、`curVars` 初始化、挂载时的
+`currentVars.current`、`initDraftBase()`、`currentPreset()`/`draftChipRows()`
+里手动拼 plan 的地方）全部换成这个函数。冷启动首次渲染、以及之后实时改
+accent，三个联动字段现在都跟 `harmonySurface()` 直接调用结果逐字节一致。
+
+### 9.2【真 bug，已修复】改了 mode 无关的底色后，联动字段"改过一次就永久断链"
+
+`--sidebar`、`--local-input-bg`、`--color-code-background`、
+`--table-header(-text)`、`--color-reference*`、`--kw-name` 这些字段，设计上
+应该"默认等于另一个字段的值，那个字段变了自己也跟着变"（比如
+`--sidebar` 默认跟 `soft` 一样）。但只要这些字段被 `buildVars()` 计算过一次，
+`varsToPlan()` 就会把当时算出来的字面值当成"用户显式设置的值"永久存进 plan
+——哪怕用户根本没碰过这个字段，只改了它依赖的源字段（比如改了
+`--color-background-soft`），这条"跟随"关系从那一刻起永远断掉，因为
+plan 里已经有了一个写死的旧值。
+
+**修复**：在 `setVal()` 里加"这个字段现在的值是不是还等于旧的默认推导值"
+的判断——如果是，说明用户没手动碰过它，改源字段时就跟着重新推导；如果不是
+（用户手动改过），就不动。同一套逻辑本来已经用在 accent → 思考框/表格表头/
+引用块/代码参数名 这条链上（见 9.1 的 `applyAccentDependents` helper），这次
+把它推广到了 soft/mute → sidebar/input-bg/code-background 这条链。
+
+### 9.3【真 bug，已修复】深浅模式互转时，文字色被错误地按背景色的逻辑处理
+
+`convertColor()` 按 `varKind()` 分类处理颜色转换，`panel` 这个分类专门处理
+"背景类"变量，把亮度硬夹到 100（浅色模式）或 19（深色模式）——这对真正的背景色
+是对的，但 `--table-header-text` / `--color-reference-text` 这两个其实是**文字色**
+的变量之前也被归到了 `panel` 类，导致"统一修改"跨模式同步时这两个文字色被夹成
+接近纯白/纯黑，而不是正常的文字色系。
+
+**修复**：新增专门的 `panelText` 分类（亮度夹在 25–40 浅色 / 65–82 深色，跟真实
+文字色的亮度范围一致），`varKind()` 里 `--table-header-text` /
+`--color-reference-text` 改归到这一类。验证：深色模式 `#ff0000` 转浅色模式前是
+`#ffffff`（错），修复后是 `#8a4242`（对）。
+
+### 9.4【真 bug，已修复】对着自己当前正在编辑的预设点"复制 CSS"，吐出来的是编辑前的旧值
+
+`copyPreset(name)` 不管你传进来的 `name` 是不是当前正在编辑、界面上已经改了颜色
+的那个预设，一律先从 `presetsRef.current`（上次保存的旧数据）里找，找到就用旧的，
+根本不看当前实际显示在画面上的颜色。用户编辑某个已保存预设的颜色后，直接点那个
+预设自己的"复制 CSS"，导出的还是编辑前的颜色，编辑等于白改。
+
+**修复**：先判断 `name` 是不是当前选中且正在编辑的预设，是的话直接用当前实时的
+`curVars`，不去翻旧的保存数据。验证：把 kelMeow 的列表面板色从 `#efede7`
+改成 `#8e9099`，同预设自己的复制 CSS 现在正确输出 `#8e9099`。
+
+### 9.5【真结构差异，已加穿透修复】会话列表面板——更正第 3/7 节
+
+用户提供了当前真实运行版本的完整 HTML DOM（不是翻源码猜的）：第 3 节里
+`[data-resource-list-pane]` 这个属性在真实 DOM 里**根本不存在**，实际那层
+不透明、真正决定画面颜色的元素是：
+
+```html
+<div data-resource-list-presentation="left-panel" ... class="... bg-background ..."
+     data-ui="chat.topic-list" data-testid="resource-list-topic">
+```
+
+它直接套用 Tailwind 的 `bg-background`（跟聊天区同一个颜色 token），不透明地
+盖住了外层。**修复**：加一条新规则一起命中这层，两条规则保留（`data-resource-list-pane`
+万一在其他版本/状态下存在也不浪费）：
+
+```css
+[data-resource-list-pane] {
+  background-color: var(--sidebar) !important;
+}
+[data-ui="chat.topic-list"] {
+  background-color: var(--sidebar) !important;
+}
+```
+
+**已在用户真实、当前安装的 Cherry Studio 里贴入验证，肉眼确认列表面板颜色
+现在跟图标栏一致，不再跟聊天区一样。**
+
+### 9.6【真结构差异，已加穿透修复】代码块背景选择器漏了最常见的那层
+
+`CodeViewer.tsx` 源码里根元素 class 固定是 `code-viewer`（两个渲染分支都有），
+但裸 `shiki` class 只在其中一个分支（Shiki 主题注册没提供 `properties.class`
+时）才会附加上。原本的选择器 `.markdown pre, .tiptap pre, .shiki, .prose pre`
+在另一个分支里可能完全打不中任何东西。**修复**：加上 `.code-viewer`，现在是
+`.markdown pre, .tiptap pre, .shiki, .prose pre, .code-viewer`，覆盖两个分支。
+
 ## 结论：本轮排查的所有问题都已解决或确认无 bug
 
-到这里，今晚提出的每一项都有了明确结论：
+到这里，从 09-07 到 09-10 两轮排查提出的每一项都有了明确结论：
 
 | 项目 | 结论 |
 |---|---|
 | Light 模式 accent 完全不生效 | 已修复（1. 注释 `*/` 提前截断 bug） |
 | 语法标点色导出成不可用的变量引用 | 已修复（2） |
-| 会话列表面板颜色跟聊天区一样 | 已修复（3，加穿透） |
 | 表格表头颜色 | 确认本来就是对的（4） |
 | Blockquote 颜色 | 确认本来就是对的（4、7） |
 | 语法高亮（关键字/字符串/注释…） | 确认 v2.0.9 架构限制，两个界面都做不到，已移除死代码（5） |
 | 思考框颜色完全没导出 | 已修复（6，新增 zone） |
-| 会话列表面板 vs 图标栏颜色 | 面板已修复且验证正确；图标栏透明是 Mac 原生设计，非 bug（7） |
-| markdown-alert（NOTE/WARNING） | 确认已生效（8，之前轮次验证过） |
+| 图标栏透明 | Mac 原生设计，非 bug（7），仍悬而未决要不要放弃这个质感 |
+| markdown-alert（NOTE/WARNING） | 确认已生效（8） |
+| 表格表头/引用块/思考框/代码参数名 12/13 预设算错 | 已修复（9.1，`scheme` 丢失 bug） |
+| sidebar/input-bg/code-background 改一次后断链 | 已修复（9.2） |
+| 表格表头文字色/引用文字色跨模式转换被夹成纯白/纯黑 | 已修复（9.3，新增 `panelText`） |
+| 编辑中的预设点自己的"复制 CSS"吐旧值 | 已修复（9.4） |
+| **会话列表面板颜色跟聊天区一样** | **已修复（9.5，更正第 3/7 节的错误结论），已在真实 App 里肉眼验证** |
+| 代码块背景选择器漏掉一个渲染分支 | 已修复（9.6） |
 
 **唯一还悬而未决、需要用户自己决定的一点**：图标栏要不要放弃 Mac 原生透明质感、
-强制刷成跟列表面板一样的纯色。其余全部已修复或确认无 bug。
-
-所有改动只涉及 `src/theme/exportV2.js` 和 `src/theme/themeModel.js` 两个文件，
-45 个 Node 测试 + 12 个 Vitest 测试全程保持通过。
+强制刷成跟列表面板一样的纯色。其余全部已修复，且关键项（列表面板）已在用户
+真实、当前安装的 Cherry Studio 里肉眼验证生效，不只是 Theme Station 自己的预览。
