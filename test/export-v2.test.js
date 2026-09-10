@@ -289,3 +289,24 @@ test('v2 导出保留标志性 sidebar glow（.sidebar-theme 四阶 opacity，�
     assert.ok(!css.includes('[data-rfd-draggable-id]'), `${p.name} 不应残留 v1 [data-rfd-draggable-id]`)
   }
 })
+
+test('v2 导出新增第三方 rail 多彩 hover（真实 2.0.x DOM 的 [data-index] + 5n 循环，取代 v1 的 nth-child(6n+)）', () => {
+  for (const p of PRESETS) {
+    const css = v2(p)
+    const glow = (p.glow || []).slice(0, 5)
+    assert.equal(glow.length, 5, `${p.name} 应有 5 色 glow`)
+    for (let i = 0; i < 5; i++) {
+      const pos = i === 4 ? 5 : i + 1
+      const bgBlock = extractBlock(css, `\\.sidebar-theme \\[data-index\\]:nth-child\\(5n\\+${pos}\\) button:hover`)
+      const svgBlock = extractBlock(css, `\\.sidebar-theme \\[data-index\\]:nth-child\\(5n\\+${pos}\\) button:hover svg`)
+      assert.ok(bgBlock, `${p.name} 缺 nth-child(5n+${pos}) 底色块`)
+      assert.ok(svgBlock, `${p.name} 缺 nth-child(5n+${pos}) 图标块`)
+      const { r, g, b } = parseColor(glow[i])
+      assert.match(bgBlock, new RegExp(`background-color:\\s*rgba\\(${r},${g},${b},0\\.16\\)\\s*!important`))
+      assert.match(bgBlock, new RegExp(`box-shadow:\\s*0 0 15px rgba\\(${r},${g},${b},0\\.35\\)\\s*!important`))
+      assert.match(svgBlock, new RegExp(`color:\\s*${glow[i]}\\s*!important`, 'i'))
+    }
+    // 5 个位置循环覆盖，不多不少
+    assert.equal((css.match(/nth-child\(5n\+\d\) button:hover \{/g) || []).length, 5, `${p.name} 应恰好 5 组 rail hover 规则`)
+  }
+})

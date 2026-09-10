@@ -324,6 +324,33 @@ export function buildV2Css(dk, lt, meta = {}) {
     ].join('\n')
   }
 
+  // Third-party addition (Theme Station): a real per-icon hover rainbow.
+  // Stock v2 has no such thing (see comment above — only the ACTIVE icon
+  // gets a glow, always accent-colored). Verified against the real 2.0.x
+  // source (Sidebar/SidebarList.tsx + packages/ui composites/sortable
+  // item-renderer.tsx): every sortable icon in the rail is wrapped in its
+  // own '<div data-index=...>' with no other sibling types interleaved
+  // (the drag overlay is portaled to document.body, not rendered inline),
+  // so nth-child cycling on that wrapper is a stable hook — same trick the
+  // v1.9.12 export already uses on the old AntD markup, just re-pointed at
+  // the new DOM. Cycles the preset's 5-color glow array by rail position.
+  const railGlow = (dk.glow || lt.glow || []).slice(0, 5)
+  const railGlowCss = railGlow.map((hex, i) => {
+    if (!hex) return ''
+    const pos = i === 4 ? 5 : i + 1
+    return [
+      `.sidebar-theme [data-index]:nth-child(5n+${pos}) button:hover {`,
+      `  background-color: ${glowAlpha(hex, 0.16)} !important;`,
+      `  box-shadow: 0 0 15px ${glowAlpha(hex, 0.35)} !important;`,
+      `}`,
+      `.sidebar-theme [data-index]:nth-child(5n+${pos}) button:hover svg {`,
+      `  color: ${hex} !important;`,
+      `  stroke: ${hex} !important;`,
+      `  filter: drop-shadow(0 0 8px ${glowAlpha(hex, 0.35)});`,
+      `}`,
+    ].join('\n')
+  }).join('\n')
+
   return `/**
  * @name: Cherry Studio Custom Theme (${name} - ${CHERRY_V2_TARGET})
  * @description: Tailwind v4 / shadcn v2.0.9 namespace. Emits the bare aliases
@@ -350,6 +377,10 @@ ${glowTokens(true)}
 html.dark .sidebar-theme {
 ${glowTokens(false)}
 }
+/* ====== Signature sidebar glow, part 2 (Theme Station third-party addition):
+   per-icon hover rainbow. Real v2 only tints the selected icon (above); this
+   re-adds the old v1.9.12 multi-color hover behavior on the new DOM. ====== */
+${railGlowCss}
 /* ====== Markdown penetrations (read the v2 product tokens above; the v2 base
    CSS hard-codes some surfaces, so we re-route them to our tokens + source
    order — later block, equal specificity → wins). ====== */
