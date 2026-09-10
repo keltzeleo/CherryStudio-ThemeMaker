@@ -16,6 +16,8 @@
   --chat-background-user:rgba(255,255,255,.08);
   --chat-text-user:#F0F0F0;
   --color-code-background:#1d1a19;
+  --color-inline-code-bg:#333333;
+  --color-inline-code-text:#ff7b72;
   --table-header:#3a3a3a;
   --table-row-bg:rgba(255,255,255,.02);
   --color-hover:rgba(255,255,255,.05);
@@ -69,6 +71,8 @@
   --chat-background-user:rgba(0,0,0,.045);
   --chat-text-user:#1b1b1f;
   --color-code-background:#efefef;
+  --color-inline-code-bg:#eeeeee;
+  --color-inline-code-text:#d73a49;
   --table-header:#e6e6e6;
   --table-row-bg:rgba(0,0,0,.02);
   --color-hover:rgba(0,0,0,.03);
@@ -206,6 +210,7 @@ body.pick .scrolly:hover{outline:2px solid var(--color-primary);outline-offset:2
 .bubble ul,.bubble ol{margin:0 0 1em;padding-left:1.4em}
 .bubble li{margin:.28em 0}
 .bubble hr{border:none;border-top:1px solid var(--color-border);margin:1.2em 0}
+.inlinecode{background:var(--color-inline-code-bg);color:var(--color-inline-code-text);border-radius:5px;padding:1px 5px;font-size:.9em}
 
 /* 用户气泡内的附件链接（走 --color-link / --ant-color-link） */
 .attach{

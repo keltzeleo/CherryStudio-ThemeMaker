@@ -351,12 +351,23 @@ function App() {
       return
     }
     if (p.v === '--color-background-mute') {
-      // --color-code-background defaults to this.
+      // --color-code-background and --color-inline-code-bg both default to this.
       const prevMute = cssVar('--color-background-mute')
       const codeBgWasTracking = cssVar('--color-code-background') === prevMute
+      const inlineCodeBgWasTracking = cssVar('--color-inline-code-bg') === prevMute
       setVar('--color-background-mute', val)
       if (codeBgWasTracking) setVar('--color-code-background', val)
+      if (inlineCodeBgWasTracking) setVar('--color-inline-code-bg', val)
       syncToOtherMode('--color-background-mute', val, varKind('--color-background-mute'))
+      return
+    }
+    if (p.v === '--kw-keyword') {
+      // --color-inline-code-text defaults to this.
+      const prevKeyword = cssVar('--kw-keyword')
+      const inlineCodeTextWasTracking = cssVar('--color-inline-code-text') === prevKeyword
+      setVar('--kw-keyword', val)
+      if (inlineCodeTextWasTracking) setVar('--color-inline-code-text', val)
+      syncToOtherMode('--kw-keyword', val, varKind('--kw-keyword'))
       return
     }
     setVar(p.v, p.kind === 'range' ? val + (p.unit || '') : val)
@@ -967,6 +978,7 @@ function App() {
                       <pre className="pz" data-zone="codebody">{CODE_LINES}</pre>
                     </div>
                     <div className="quote pz" data-zone="quote">好的设计应该是「一眼可信」，而不是「需要解释」——用户信任它，才敢放心改。</div>
+                    <p>正文里提到 <code className="inlinecode pz" data-zone="inline-code">--color-primary</code> 这种行内代码，点它可以单独改颜色。</p>
                     <div className={'tablewrap pz' + (tableHl ? ' table-hl' : '')} data-zone="table">
                       <span className="tcorner tl" onMouseEnter={() => setTableHl(true)} onMouseLeave={() => setTableHl(false)}></span>
                       <span className="tcorner tr" onMouseEnter={() => setTableHl(true)} onMouseLeave={() => setTableHl(false)}></span>

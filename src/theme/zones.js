@@ -64,6 +64,10 @@ export const ZONES = {
               ]},
   codehead: { sel:'.code .ch',               note:'代码块标题底',          parts:[{label:'标题底',kind:'bg',v:'--color-background-mute'}] },
   codebody: { sel:'.code pre',               note:'代码块底色',           parts:[{label:'代码底',kind:'bg',v:'--color-code-background'}] },
+  'inline-code': { sel:'.inlinecode',        note:'行内代码 · inline code', parts:[
+                {label:'行内代码底',kind:'bg',v:'--color-inline-code-bg'},
+                {label:'行内代码文字',kind:'text',v:'--color-inline-code-text'},
+              ]},
   kwcomment: { sel:'.kwz[data-kw="comment"]', note:'注释',                 parts:[{label:'注释颜色',kind:'kw',v:'--kw-comment',hint:'一个语法群，全块一起变'}] },
   kwkeyword: { sel:'.kwz[data-kw="keyword"]', note:'关键字',               parts:[{label:'关键字颜色',kind:'kw',v:'--kw-keyword',hint:'keyword：const/import/export/async/function…'}] },
   kwstring:  { sel:'.kwz[data-kw="string"]',  note:'字符串',               parts:[{label:'字符串颜色',kind:'kw',v:'--kw-string',hint:'字符串 + template literal'}] },

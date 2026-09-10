@@ -20,6 +20,7 @@ export const VAR_KEYS = [
   '--local-input-bg', '--local-input-border',
   '--color-reference', '--color-reference-text', '--color-reference-background',
   '--color-hover', '--color-active', '--color-border', '--color-border-soft',
+  '--color-inline-code-bg', '--color-inline-code-text',
 ]
 
 // Plan selection: a preset stores `dark` and `light` plans; fall back to the
@@ -42,6 +43,7 @@ export function varsToPlan(o) {
     kwComment: o['--kw-comment'], kwKeyword: o['--kw-keyword'], kwString: o['--kw-string'],
     kwLiteral: o['--kw-literal'], kwName: o['--kw-name'], kwPunct: o['--kw-punct'],
     codeBg: o['--color-code-background'], sidebar: o['--sidebar'],
+    inlineCodeBg: o['--color-inline-code-bg'], inlineCodeText: o['--color-inline-code-text'],
     tableHeader: o['--table-header'], tableHeaderText: o['--table-header-text'], tableBorder: o['--table-border'],
     tableRadius: o['--table-radius'], tableBorderWidth: o['--table-border-width'], tableRowBg: o['--table-row-bg'],
     scrollThumb: o['--scroll-thumb'], scrollWidth: o['--scroll-width'], linkHover: o['--color-link-hover'],
@@ -70,6 +72,8 @@ export function buildVars(plan, glow) {
     '--chat-background-user': s.user,
     '--chat-text-user': s.userText,
     '--color-code-background': s.codeBg || s.mute,
+    '--color-inline-code-bg': s.inlineCodeBg || s.mute,
+    '--color-inline-code-text': s.inlineCodeText || s.kwKeyword || (dk ? '#ff7b72' : '#d73a49'),
     '--sidebar': s.sidebar || s.soft,
     '--table-header': s.tableHeader || harm.table,
     '--table-row-bg': s.tableRowBg || (dk ? 'rgba(255,255,255,.02)' : 'rgba(0,0,0,.02)'),
@@ -151,6 +155,7 @@ export function fieldsOf(v) {
     userBg: v['--chat-background-user'], userText: v['--chat-text-user'],
     aiBg: v['--chat-background-ai'],
     codeBg: v['--color-code-background'], tableHeader: v['--table-header'],
+    inlineCodeBg: v['--color-inline-code-bg'], inlineCodeText: v['--color-inline-code-text'],
     thinkBg: v['--local-thinking-bg'], thinkBorder: v['--local-thinking-border'], thinkText: v['--local-thinking-text'],
     inputBg: v['--local-input-bg'], inputBorder: v['--local-input-border'],
     ref: v['--color-reference'], refText: v['--color-reference-text'], refBg: v['--color-reference-background'],
@@ -285,8 +290,8 @@ function themeFromFields(dk, lt) {
     sidebarHoverOpacity: 0.15,
     sidebarHoverGlowOpacity: 0.5,
 
-    inlineCodeBgDark: dk.mute,      inlineCodeBgLight: lt.mute,
-    inlineCodeColorDark: dk.kwKeyword, inlineCodeColorLight: lt.kwKeyword,
+    inlineCodeBgDark: dk.inlineCodeBg,      inlineCodeBgLight: lt.inlineCodeBg,
+    inlineCodeColorDark: dk.inlineCodeText, inlineCodeColorLight: lt.inlineCodeText,
   }
 }
 

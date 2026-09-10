@@ -230,8 +230,8 @@ function v2Tokens(f) {
     ['--foreground-disabled', f.text3],
     ['--link', f.link],
     ['--code-block', f.codeBg],
-    ['--inline-code', f.mute],
-    ['--inline-code-foreground', f.kwKeyword],
+    ['--inline-code', f.inlineCodeBg],
+    ['--inline-code-foreground', f.inlineCodeText],
     ['--reference', f.ref],
     ['--reference-foreground', f.refText],
     ['--reference-subtle', f.refBg],
@@ -239,6 +239,7 @@ function v2Tokens(f) {
     ['--highlight-foreground', fg],
     ['--highlight-accent', rgbaWithAlpha(primary, 0.3)],
     ['--chat-user', f.userBg],
+    ['--chat-ai', f.aiBg],
     // Thinking box — VERIFIED against real ThinkingBlock.tsx: the expanded
     // content wrapped in [data-ui="part:message-reasoning"] uses Tailwind
     // bg-muted (a generic neutral, not our accent-tinted thinkingOf() design)
@@ -500,6 +501,21 @@ ${glowTokens(false)}
    chosen --chat-user regardless of layout. */
 [data-ui="chat.user-bubble-message"] .message-content-container {
   background-color: var(--chat-user) !important;
+}
+
+/* ====== AI bubble background (third-party addition, not a native CS look) ======
+   Real Cherry Studio ships the assistant's .message-content-container with no
+   background class at all (verified against a real DOM dump — plain text
+   flowing in the chat area, not a boxed bubble), and this file previously
+   left it untouched to match that native transparent look. Per explicit
+   request, the preview's own AI-bubble zone should actually take effect in
+   the export instead of only ever showing up in the preview: we force a
+   background plus enough padding/rounding to read as a bubble, since the
+   element carries none of its own. */
+.message-assistant .message-content-container {
+  background-color: var(--chat-ai) !important;
+  border-radius: 10px !important;
+  padding: 10px 16px !important;
 }
 
 /* v2.0.9 renders EVERY fenced code block (regular chat markdown and the
