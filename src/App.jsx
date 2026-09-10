@@ -768,9 +768,8 @@ function App() {
       if (e.target.closest('.preset-strip')) return
       const hit = getZone(e.target)
       if (hit) {
-        const isAccentInput = !!e.target.closest('.accent-ball input[type="color"]')
         e.stopPropagation()
-        if (!isAccentInput) e.preventDefault()
+        e.preventDefault()
         if (popoverRef.current && selElRef.current === hit.el) closePopover()
         else openPopover(hit, e.clientX, e.clientY)
       } else if (!e.target.closest('#popover')) {
