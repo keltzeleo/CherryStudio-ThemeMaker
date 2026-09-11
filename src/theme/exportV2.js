@@ -456,19 +456,21 @@ ${railGlowCss}
   border-radius: 6px !important;
 }
 
-/* Blockquote — VERIFIED against Cherry's real markdown.css (v2.0.12):
- * .markdown blockquote reads background-color: var(--markdown-content-background)
- * (shared with th/inline-code/kbd — do NOT redefine that var globally, it'd
- * recolor 7 unrelated surfaces), border-left: 2px solid var(--primary)
- * (accent-tied, no independent hook), color: var(--muted-foreground). None of
- * that is --reference* — those real tokens exist only for citation badges
- * (.markdown sup[data-citation]). Since the preview treats the quote family
- * as independently editable (not tied to accent/muted), we penetrate the
- * individual properties (never the border-left shorthand, so we don't
- * clobber its width/style) with our own --reference / --reference-foreground
- * hook — this also (correctly) re-colors citation badges the same way, since
- * those really do read --reference/--reference-foreground natively. */
-.markdown blockquote {
+/* Blockquote — the ".markdown blockquote" selector below was written against
+ * an older real markdown.css (v2.0.12) that no longer matches: the currently
+ * installed build renders quotes through a "Streamdown" markdown engine
+ * (user-supplied real DOM), which emits a bare
+ *   <blockquote data-streamdown="blockquote" class="border-muted-foreground/30
+ *     border-l-4 pl-4 text-muted-foreground italic">
+ * — no .markdown ancestor class on this path, no background utility at all
+ * (transparent), border color via border-muted-foreground/30, text via
+ * text-muted-foreground. The old rule's reasoning still holds (penetrate
+ * border-left-color only, never the border-left shorthand, so we don't
+ * clobber the real border-l-4 width) — just re-pointed at the real hook.
+ * .markdown blockquote is kept as a fallback for any other render path;
+ * citation badges (.markdown sup[data-citation]) were part of the older
+ * verification and haven't been re-checked against this build. */
+.markdown blockquote, blockquote[data-streamdown="blockquote"] {
   background-color: var(--reference-subtle) !important;
   border-left-color: var(--reference) !important;
   color: var(--reference-foreground) !important;

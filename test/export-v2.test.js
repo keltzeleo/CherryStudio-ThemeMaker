@@ -310,3 +310,16 @@ test('v2 导出新增第三方 rail 多彩 hover（真实 2.0.x DOM 的 [data-in
     assert.equal((css.match(/nth-child\(5n\+\d\) button:hover \{/g) || []).length, 5, `${p.name} 应恰好 5 组 rail hover 规则`)
   }
 })
+
+test('v2 blockquote 选择器同时覆盖 .markdown blockquote 与真实 Streamdown 渲染的 blockquote[data-streamdown="blockquote"]（用户实测：旧选择器在当前构建下打不中，quote 沦为 muted-foreground 黑灰色）', () => {
+  for (const p of PRESETS) {
+    const css = v2(p)
+    const block = extractBlock(css, '\\.markdown blockquote, blockquote\\[data-streamdown="blockquote"\\]')
+    assert.ok(block, `${p.name} 缺 blockquote 规则`)
+    assert.match(block, /background-color:\s*var\(--reference-subtle\)\s*!important/, `${p.name} background-color`)
+    assert.match(block, /border-left-color:\s*var\(--reference\)\s*!important/, `${p.name} border-left-color`)
+    assert.match(block, /color:\s*var\(--reference-foreground\)\s*!important/, `${p.name} color`)
+    // 没有用 border-left 简写，不能连宽度/样式一起吃掉（真实元素是 border-l-4）
+    assert.ok(!block.includes('border-left:'), `${p.name} 不该用 border-left 简写，会吃掉真实的 border-l-4 宽度`)
+  }
+})
