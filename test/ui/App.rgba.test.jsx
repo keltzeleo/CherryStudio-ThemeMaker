@@ -117,4 +117,30 @@ describe('popover 色值行的 R/G/B/alpha 数值输入', () => {
     expect(r).toBe(60)
     expect(a).toBeCloseTo(0.045, 3)
   })
+
+  it('关掉"統一修改"改 accent、再开回去：soft/mute/user bubble 都要用新 accent 重新算，不是把旧模式的 rgba 原样搬过去', () => {
+    render(<App />)
+    const syncCb = document.querySelector('.sync-toggle input')
+    fireEvent.click(syncCb)
+    expect(syncCb.checked).toBe(false)
+
+    fireEvent.click(document.querySelector('[data-zone="accent"]'), { clientX: 300, clientY: 200 })
+    const row = rowByLabel('主色 Accent')
+    const [rIn] = rgbaInputs(row)
+    fireEvent.change(rIn, { target: { value: '40' } })
+
+    fireEvent.click(syncCb)
+    expect(syncCb.checked).toBe(true)
+    fireEvent.click(document.querySelector('button[title="Light"]'))
+
+    const soft = parseColor(document.documentElement.style.getPropertyValue('--color-primary-soft'))
+    const mute = parseColor(document.documentElement.style.getPropertyValue('--color-primary-mute'))
+    const user = parseColor(document.documentElement.style.getPropertyValue('--chat-background-user'))
+    expect(soft.r).toBe(40)
+    expect(soft.a).toBeCloseTo(0.6, 3)
+    expect(mute.r).toBe(40)
+    expect(mute.a).toBeCloseTo(0.3, 3)
+    expect(user.r).toBe(40)
+    expect(user.a).toBeCloseTo(0.045, 3)
+  })
 })

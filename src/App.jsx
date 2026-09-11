@@ -231,13 +231,20 @@ function App() {
       const tgt = ensureOtherSnapshot()
       const curSnap = snapCurrentVars()
       const SYNC_KEYS = ['--color-primary', '--color-background', '--color-background-soft',
-        '--chat-background-user', '--chat-text-user', '--chat-background-ai', '--color-code-background', '--local-input-bg']
+        '--chat-text-user', '--chat-background-ai', '--color-code-background', '--local-input-bg']
       SYNC_KEYS.forEach(v => { if (curSnap[v]) tgt[v] = convertColor(curSnap[v], varKind(v), other) })
       if (curSnap['--color-primary']) {
         tgt['--local-thinking-bg'] = thinkingOf(curSnap['--color-primary'], other === 'dark').bg
         tgt['--local-thinking-border'] = thinkingOf(curSnap['--color-primary'], other === 'dark').border
         tgt['--local-thinking-text'] = thinkingOf(curSnap['--color-primary'], other === 'dark').text
         tgt['--color-active'] = rgbaWithAlpha(curSnap['--color-primary'], other === 'dark' ? 0.12 : 0.08)
+        tgt['--color-primary-mute'] = rgbaWithAlpha(curSnap['--color-primary'], 0.3)
+        tgt['--color-primary-soft'] = rgbaWithAlpha(curSnap['--color-primary'], 0.6)
+        // --chat-background-user is always rgba(...), never a plain #hex, so
+        // convertColor's generic path (which only transforms #hex input) would
+        // just copy it verbatim — wrong alpha for the target mode. Recompute
+        // it the same way applyAccentDependents does for a live edit.
+        tgt['--chat-background-user'] = rgbaWithAlpha(curSnap['--color-primary'], other === 'dark' ? 0.08 : 0.045)
       }
       syncSnapState()
       toast('已开启统一修改 · 当前配色已同步另一模式')
