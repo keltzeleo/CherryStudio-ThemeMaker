@@ -108,8 +108,8 @@ test('User bubble bg 默认是 accent 的低 alpha 派生（ThemeStation-UX-Desi
   // 显式设置 user 时优先于默认公式（自建 preset 手动调过的不能被盖掉）。
   const custom = buildVars({ bg: '#2b2b2b', accent: '#E89975', user: 'rgba(1,2,3,.5)' }, undefined)
   assert.equal(custom['--chat-background-user'], 'rgba(1,2,3,.5)')
-  // Kel Meow 本身不再手动设 user，验证它确实吃到这条默认公式。
-  const km = PRESETS.find(p => p.name === 'Kel Meow')
+  // Apricat 本身不再手动设 user，验证它确实吃到这条默认公式。
+  const km = PRESETS.find(p => p.name === 'Apricat')
   assert.equal(km.dark.user, undefined)
   assert.equal(buildVars(presetPlan(km, 'dark'), km.glow)['--chat-background-user'], rgbaWithAlpha(km.dark.accent, 0.08))
 })
@@ -229,7 +229,7 @@ test('导出值 == 预览 buildVars 输出（所见 == 所得，官方名 ↔ �
   // `body[theme-mode] { --primary: ...; --primary-color: ...; }` block in
   // exportCss.js), not a dark/light pair. themeFromFields() feeds it from
   // `dk.primary` only. For the 12 presets whose light/dark accent are equal
-  // this is indistinguishable from a per-mode value; tzeDimensions is the
+  // this is indistinguishable from a per-mode value; tealDrift is the
   // first preset with a deliberately different light accent (per the user's
   // hand-tuned design — v2.0.9 supports this via `:root:root`/`:root.dark`,
   // v1.9.12 structurally cannot), so these three are checked against dark's

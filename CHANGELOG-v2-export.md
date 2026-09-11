@@ -72,8 +72,9 @@
 `.markdown blockquote { ... !important }` 规则三条声明全部生效（无删除线），
 Cherry 自己的同名规则、以及 `.text-muted-foreground` 都被正确压制（有删除线）。
 之前觉得颜色"跟预期不一样"，是因为测试时实际生效的预设是配色方案为
-`complementary`（互补色）的自建 "kelMeow"，不是方案为 `analogous`（邻近色）的
-官方 "Kel Meow"——两者用同一个粉色 accent 算出来的引用文字色本来就不一样，
+`complementary`（互补色）的自建 "kelMeow"（2026-09-12 改名为 "honeyPaw"），
+不是方案为 `analogous`（邻近色）的官方 "Kel Meow"（2026-09-12 改名为 "Apricat"）——
+两者用同一个粉色 accent 算出来的引用文字色本来就不一样，
 不是 bug，是不同预设间的正常差异。
 
 ## 5.【认知修正，已移除死代码】语法高亮（关键字/字符串/注释等）在两个界面都没有 CSS 钩子
@@ -260,6 +261,39 @@ plan 里已经有了一个写死的旧值。
 在另一个分支里可能完全打不中任何东西。**修复**：加上 `.code-viewer`，现在是
 `.markdown pre, .tiptap pre, .shiki, .prose pre, .code-viewer`，覆盖两个分支。
 
+## 10. 2026-09-12 补充：`body` 层重新定义了 Layer 4 变量，`:root` 那份传不下去
+
+**位置**：`exportV2.js` 的 `v2Tokens`（拆成 `v2BaseTokens` + `v2CherryTokens`）、`buildV2Css`。
+
+**现象**：quote block（`--reference`/`--reference-subtle`/`--reference-foreground`）跟
+user 气泡底色（`--chat-user`）在暗色模式下颜色对不上导出的 CSS——即使反复确认过：注入的
+`<style id="user-defined-custom-css">` 里变量值完全正确、Streamdown 选择器也确认命中、
+DevTools Styles 面板也确认我们那条规则本身没被别的规则打败，实际算出来的颜色还是不对。
+
+**根因**（用户本人在真实 Cherry Studio 里用 DevTools 沿着祖先链逐层排查找到的）：Cherry
+Studio 自己的原生主题，直接在 `<body class="dark">` 这一层，也定义了一份这几个变量的原生
+默认值。CSS 自定义属性靠继承传值——只要某个元素自己就有这个变量的声明，不管祖先层写得
+多凶、`!important` 加多少层、specificity 多高，都传不下去，因为这根本不是"哪条规则赢"的
+级联问题，是"body 自己已经有一份，不用问 `:root` 要"。`:root:root`/`:root.dark` 挂在
+`<html>` 上，而实际内容都在 `<body>` 里面——只要 body 自己重新定义了同名变量，`:root`
+那份无论如何都传不到 body 的任何子孙元素。
+
+用同样的方法核对过其它变量层级，确认只有 Layer 4（"Cherry product semantics"：
+`--reference*`、`--chat-user`、`--link`、`--code-block`、`--thinking-*`、`--table-*` 等）
+会被这样劫持；Layer 1–3（`--color-*`、`--cs-*`、裸 shadcn 别名）在 `:root` 跟 `body`
+两层读出来完全一致，不受影响。
+
+**修复**：`v2Tokens` 拆成 `v2BaseTokens`（Layer 1–3，行为不变）+ `v2CherryTokens`
+（Layer 4）。`buildV2Css` 在原本挂在 `:root:root`/`:root.dark` 的完整输出之外，新增两块
+只含 Layer 4、且每条声明都带 `!important` 的 `body`/`body.dark` 重新声明（新增的
+`tokenBlockImportant`），让 body 自己的继承链从我们的值开始，不用去问传不到的 `:root`。
+
+已用 DevTools 逐层追踪确认修复前后的差异（真实值：body 层原本读到
+`--reference-subtle: #0b0e12`，`html` 层是对的 `#374341`），也用模拟同款遮蔽规则的隔离
+测试验证过新代码能反制它，最后在用户真实、当前安装的 Cherry Studio 里重新套用导出的
+CSS 后肉眼 + DevTools 双重验证：`html`/`body` 两层七个变量（含三个不受影响的作对照）
+全部一致。
+
 ## 结论：本轮排查的所有问题都已解决或确认无 bug
 
 到这里，从 09-07 到 09-10 两轮排查提出的每一项都有了明确结论：
@@ -280,6 +314,7 @@ plan 里已经有了一个写死的旧值。
 | 编辑中的预设点自己的"复制 CSS"吐旧值 | 已修复（9.4） |
 | **会话列表面板颜色跟聊天区一样** | **已修复（9.5，更正第 3/7 节的错误结论），已在真实 App 里肉眼验证** |
 | 代码块背景选择器漏掉一个渲染分支 | 已修复（9.6） |
+| Quote block / user 气泡底色暗色模式颜色不对，变量本身/选择器/规则胜负都确认没问题 | 已修复（10，`body` 层遮蔽了 Layer 4 变量），已在真实 App 里 DevTools 验证 |
 
 **唯一还悬而未决、需要用户自己决定的一点**：图标栏要不要放弃 Mac 原生透明质感、
 强制刷成跟列表面板一样的纯色。其余全部已修复，且关键项（列表面板）已在用户

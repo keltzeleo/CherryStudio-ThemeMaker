@@ -111,8 +111,29 @@ function tokenBlock(selector, pairs) {
   return `${selector} {\n${lines.join('\n')}\n}`
 }
 
+// Same as tokenBlock but every declaration carries `!important` — used only for
+// the body-level Layer 4 re-declaration (see v2CherryTokens), since we can't
+// rely on source order/specificity against Cherry's own same-selector-shape
+// native body rule the way :root:root/:root.dark do against the base :root/.dark.
+function tokenBlockImportant(selector, pairs) {
+  const lines = []
+  for (const [key, value] of pairs) {
+    if (value === undefined || value === null || value === '') continue
+    lines.push(`  ${key}: ${value} !important;`)
+  }
+  return `${selector} {\n${lines.join('\n')}\n}`
+}
+
 // Map one mode's preview fields → the v2.0.9 token surface.
 function v2Tokens(f) {
+  return [...v2BaseTokens(f), ...v2CherryTokens(f)]
+}
+
+// Layers 1–3: `--color-*`, `--cs-*`, and the bare shadcn aliases. Confirmed live
+// (DevTools, both this session's own export) that Cherry Studio never redeclares
+// these at `body` — only `:root` sets them, so ordinary inheritance carries our
+// `:root:root`/`:root.dark` values all the way down. No body-level duplicate needed.
+function v2BaseTokens(f) {
   const primary = f.primary
   const fg = foregroundOf(primary)
   const primaryHover = darkenHex(primary, 0.08)
@@ -221,7 +242,28 @@ function v2Tokens(f) {
     ['--sidebar-accent-foreground', f.text],
     ['--sidebar-border', f.border],
     ['--sidebar-ring', primary],
-    // ── Layer 4 · Cherry product semantics (some read --cs-*, some literal) ──
+  ]
+}
+
+// Layer 4 · Cherry product semantics (some read --cs-*, some literal).
+// VERIFIED live via DevTools (2026-09-12): Cherry Studio's own native theme
+// ALSO declares this exact token set — --reference*/--chat-user confirmed,
+// the rest presumed same family — directly on `<body class="dark">`, not just
+// `:root`. CSS custom-property inheritance stops at the nearest ancestor that
+// has its own declaration: since `body` sits between `:root` and every real
+// element, body's own value always wins over whatever `:root`/`:root.dark`
+// says, no matter how specific or `!important` our `:root` rule is — this
+// isn't a "which rule wins" cascade question at all, it's "body never has to
+// ask :root for a value it already has". Confirmed the leak stops exactly at
+// Layer 4: Layers 1–3 (--color-primary, --background, --muted-foreground)
+// read identically at `:root` and `body`; only Layer 4 tokens differed
+// (--reference-subtle: our #374341 vs body's own #0b0e12, etc). Fix: emit this
+// same layer again at `body`/`body.dark` below (see bodyLightBlock/bodyDarkBlock
+// in buildV2Css) so body's own inheritance chain starts from our value instead.
+function v2CherryTokens(f) {
+  const primary = f.primary
+  const fg = foregroundOf(primary)
+  return [
     ['--background-subtle', f.soft],
     ['--border-subtle', f.borderSoft],
     ['--border-strong', f.border],
@@ -300,6 +342,18 @@ export function buildV2Css(dk, lt, meta = {}) {
   const lightBlock = tokenBlock(':root:root', [...v2Tokens(lt), ['--radius', `${radius}px`]])
   const darkBlock = tokenBlock(':root.dark', [...v2Tokens(dk), ['--radius', `${radius}px`]])
 
+  // Layer 4 re-declared on `body`/`body.dark`. Custom-property inheritance stops
+  // at the nearest ancestor with its own declaration for that property — Cherry
+  // Studio's native theme declares this exact Layer-4 set directly on
+  // `<body class="dark">`, so `:root:root`/`:root.dark` above (which sit on
+  // `<html>`) never reach it no matter how specific or `!important` they are.
+  // See the comment on v2CherryTokens for how this was found. `!important` here
+  // (via tokenBlockImportant, unlike the plain tokenBlock() above) because we
+  // can't lean on source order the way :root:root/:root.dark do against the
+  // base :root/.dark — we don't know Cherry's own body selector's specificity.
+  const bodyLightBlock = tokenBlockImportant('body', v2CherryTokens(lt))
+  const bodyDarkBlock = tokenBlockImportant('body.dark', v2CherryTokens(dk))
+
   // Signature sidebar glow (Theme Station). v2.0.9 (Tailwind/shadcn) renders the
   // ACTIVE sidebar item's indicator with a 4-step opacity hierarchy emitted on the
   // `.sidebar-theme` class applied to `[data-ui="ui.sidebar"]`:
@@ -365,6 +419,17 @@ export function buildV2Css(dk, lt, meta = {}) {
 ${lightBlock}
 
 ${darkBlock}
+
+/* ====== Layer 4 re-declared on body/body.dark ======
+   Cherry Studio's own native theme sets this same "Cherry product semantics"
+   token set directly on <body class="dark">, not just :root — custom-property
+   inheritance stops at the nearest ancestor with its own declaration, so body's
+   own value always wins over :root:root/:root.dark above, regardless of their
+   specificity or !important. Re-declaring the layer here, with !important,
+   gives body its own value to inherit from instead. See v2CherryTokens. */
+${bodyLightBlock}
+
+${bodyDarkBlock}
 
 /* ====== Signature sidebar glow (Theme Station) ======
    Boosted to html-qualified selectors (0,1,1 > 0,0,1) so this wins on

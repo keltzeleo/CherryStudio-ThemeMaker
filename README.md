@@ -86,24 +86,25 @@ The v2 exporter writes **light as `:root:root` and dark as `:root.dark`** — bo
 
 | Preset | Accent · 主色 | Harmony scheme · 和声方案 |
 | --- | --- | --- |
-| `Kel Meow` | `#BE8B96` | analogous · 邻近 |
-| `Ceramic` | `#bdaf89` | tetradic · 四元 |
-| `Morandi` | `#675d79` | monochrome · 同色相 |
-| `Paper` | `#6b857e` | splitComp · 分裂互补 |
-| `Moss` | `#8db578` | square · 方阵 |
-| `Ocean` | `#6fb5d4` | complementary · 互补 |
+| `Apricat` | `#E89975` | analogous · 邻近 |
+| `Oatmilk` | `#bdaf89` | tetradic · 四元 |
+| `Duskstone` | `#675d79` | monochrome · 同色相 |
+| `Sagemist` | `#6b857e` | splitComp · 分裂互补 |
+| `Fernleaf` | `#8db578` | triadic · 三足 |
+| `Skyglass` | `#6fb5d4` | complementary · 互补 |
 
 ### Custom · 自建预设
 
 | Preset | Accent · 主色 | Harmony scheme · 和声方案 |
 | --- | --- | --- |
-| `kelMeow` | `#cca83e` | complementary · 互补 |
-| `kelMorandi` | `#3e72cc` | triadic · 三足 |
-| `keltzeleo` | `#5acc3e` | square · 方阵 |
-| `meoink` | `#cc3e72` | splitComp · 分裂互补 |
-| `meowMorandi` | `#893ecc` | analogous · 邻近 |
-| `taiyangTze` | `#cc633e` | monochrome · 同色相 |
-| `tzeDimensions` | `#3eccad` | triadic · 三足 |
+| `honeyPaw` | `#c3ad79` | complementary · 互补 |
+| `steelMist` | `#7691b2` | triadic · 三足 |
+| `willowMint` | `#86aa6e` | square · 方阵 |
+| `berryMeow` | `#c18694` | splitComp · 分裂互补 |
+| `violetPurr` | `#9e81b1` | analogous · 邻近 |
+| `sunClay` | `#ba8769` | monochrome · 同色相 |
+| `tealDrift` | `#70a99d` | triadic · 三足 |
+| `tangerine chachor` | `#a97979` | analogous · 邻近 |
 
 ---
 

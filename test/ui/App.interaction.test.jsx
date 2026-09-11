@@ -117,11 +117,11 @@ describe('Theme Station 交互层', () => {
 
   it('修改已保存的自建预设会弹出原地改 vs 新建，选择原地改', () => {
     render(<App />)
-    fireEvent.click(document.querySelector('.preset.own[data-name="kelMeow"]'))
+    fireEvent.click(document.querySelector('.preset.own[data-name="honeyPaw"]'))
     fireEvent.click(document.querySelector('[data-zone="ai"]'), { clientX: 300, clientY: 200 })
 
     expect(document.getElementById('editChoiceMask')).toBeTruthy()
-    expect(document.getElementById('editChoiceName').textContent).toBe('kelMeow')
+    expect(document.getElementById('editChoiceName').textContent).toBe('honeyPaw')
 
     fireEvent.click(screen.getByText('直接改此预设'))
     expect(document.getElementById('editChoiceMask')).toBeFalsy()
@@ -132,7 +132,7 @@ describe('Theme Station 交互层', () => {
 
   it('新建自建主题会生成带 v2 名称的草案卡', () => {
     render(<App />)
-    fireEvent.click(document.querySelector('.preset.own[data-name="kelMeow"]'))
+    fireEvent.click(document.querySelector('.preset.own[data-name="honeyPaw"]'))
     fireEvent.click(document.querySelector('[data-zone="ai"]'), { clientX: 300, clientY: 200 })
 
     expect(document.getElementById('editChoiceMask')).toBeTruthy()
@@ -140,7 +140,7 @@ describe('Theme Station 交互层', () => {
 
     expect(document.getElementById('editChoiceMask')).toBeFalsy()
     expect(document.getElementById('draftcard')).toBeTruthy()
-    expect(document.querySelector('#draftcard .dname').value).toBe('kelMeow v2')
+    expect(document.querySelector('#draftcard .dname').value).toBe('honeyPaw v2')
     expect(document.getElementById('popover')).toBeTruthy()
     expect(document.getElementById('popover').textContent).toContain('生成「新预设」卡片')
   })

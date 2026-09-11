@@ -32,7 +32,7 @@
 | 表格行底 | `--table-row-bg` 已補並接入 inspector |
 | 附件連結色 | `--ant-color-link(-hover)` 接線到 preview `--color-link(-hover)` |
 | Alpha 一致性 | preview / selector / 匯出三者含 alpha 完全對齊 |
-| 7 個自建 preset | kelMeow、kelMorandi、keltzeleo、meoink、meowMorandi、taiyangTze、tzeDimensions（各自專屬 light/dark） |
+| 8 個自建 preset | honeyPaw、steelMist、willowMint、berryMeow、violetPurr、sunClay、tealDrift、tangerine chachor（各自專屬 light/dark） |
 
 ---
 
@@ -64,7 +64,7 @@
 | Popover 數值輸入框 | 待做 | 色塊旁邊加 R/G/B/alpha 數字輸入，取代純拖色域；校驗 RGB ≤255、alpha ≤1.0，超界報錯 |
 | 順藤摸瓜排查 | 待做 | 系統性找「看起來可點、實際沒接上真實 DOM／CSS」的元素，比照 inline-code 那次的排查方式 |
 | Popover 拖拽 | 構想中，未拍板 | popover 標題列的三橫杆目前純裝飾，跟 dock 用的是同一個 SVG grip 圖示；若真的做成可拖拽，行為要跟現有 `positionPopover(x,y)` 的自動定位協調（比如切換 zone 時要不要保留上次拖的位置） |
-| Ceramic / Morandi / Paper 的 accent | 待決定 | 這三個內建 preset 的 accent 在某次加 v2.0.9 導出功能的 commit（322a686）裡被順手換掉，跟 Kel Meow 同一批「未經確認的改動」；目前保留現狀，等使用者要不要也復原 |
+| Oatmilk / Duskstone / Sagemist（原 Ceramic / Morandi / Paper）的 accent | 待決定 | 這三個內建 preset 的 accent 在某次加 v2.0.9 導出功能的 commit（322a686）裡被順手換掉，跟 Kel Meow（現 Apricat）同一批「未經確認的改動」；2026-09-12 改名時沿用的仍是這個未確認的 accent 值，所以新名字也可能要在復原之後重新想一次；目前保留現狀，等使用者要不要也復原 |
 
 ### P2 — 打磨（非必須）
 
@@ -76,7 +76,7 @@
 
 ## 四、已確認「不做」
 
-- **不刪 6 個內建 preset**（Kel Meow、Ceramic、Morandi、Paper、Moss、Ocean）——它們與自建 preset 不重複。
+- **不刪 6 個內建 preset**（Apricat、Oatmilk、Duskstone、Sagemist、Fernleaf、Skyglass，2026-09-12 前名為 Kel Meow、Ceramic、Morandi、Paper、Moss、Ocean）——它們與自建 preset 不重複。
 - **不追「包體積 / 依賴數」**——對單人設計工具非真實短板（React 稅可接受）。
 
 ---

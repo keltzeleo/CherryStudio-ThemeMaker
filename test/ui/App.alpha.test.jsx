@@ -55,7 +55,7 @@ describe('selector 与预览的颜色 / alpha 一致性', () => {
 
   it('新建草案后 selector 色值仍与预览 inline 变量一致', () => {
     render(<App />)
-    fireEvent.click(document.querySelector('.preset.own[data-name="kelMeow"]'))
+    fireEvent.click(document.querySelector('.preset.own[data-name="honeyPaw"]'))
     fireEvent.click(document.querySelector('[data-zone="ai"]'), { clientX: 300, clientY: 200 })
     fireEvent.click(screen.getByText('以此建立新的主题'))
 

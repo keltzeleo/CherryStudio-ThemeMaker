@@ -132,7 +132,7 @@ function RangeRow({ part, value, onChange, onCommit }) {
 function App() {
   const [mode, setMode] = useState('dark')
   const [exportTarget, setExportTarget] = useState(CHERRY_V1_TARGET)
-  const [selName, setSelName] = useState('Kel Meow')
+  const [selName, setSelName] = useState('Apricat')
   const [presets, setPresets] = useState(PRESETS)
   const [draft, setDraft] = useState(false)
   const [draftName, setDraftName] = useState('')
@@ -157,7 +157,7 @@ function App() {
   const currentVars = useRef({})
   const [curVars, setCurVars] = useState(() => buildVars(presetPlan(PRESETS[0], 'dark'), PRESETS[0].glow))
   const presetsRef = useRef(PRESETS)
-  const selNameRef = useRef('Kel Meow')
+  const selNameRef = useRef('Apricat')
   const modeRef = useRef('dark')
   const exportTargetRef = useRef(CHERRY_V1_TARGET)
   const draftRef = useRef(false)
