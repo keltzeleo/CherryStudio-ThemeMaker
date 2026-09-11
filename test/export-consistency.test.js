@@ -149,7 +149,7 @@ test('导出是分层 Cherry Studio CSS（非扁平 :root / [theme-mode=light]�
 
 test('导出头正确（@name Cherry Studio Custom Theme）', () => {
   const css = buildPresetCss(PRESETS[0])
-  assert.match(css, /@name:\s*Cherry Studio Custom Theme \(Theme Station V72 - V71\)/)
+  assert.match(css, /@name:\s*Cherry Studio Custom Theme \(Theme Station V73 - V71\)/)
 })
 
 test('导出包含官方变量全集的关键成员', () => {

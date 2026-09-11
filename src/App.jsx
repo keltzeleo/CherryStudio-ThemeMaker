@@ -48,7 +48,7 @@ function Kw({ kw, children }) {
 const CODE_LINES = [
   <Kw kw="comment" key="l0">// Theme preview — syntax colors</Kw>, '\n',
   <Kw kw="keyword" key="l1a">import</Kw>, ' ', <Kw kw="name" key="l1b">useState</Kw>, ' ', <Kw kw="keyword" key="l1c">from</Kw>, ' ', <Kw kw="string" key="l1d">'react'</Kw>, <Kw kw="punct" key="l1e">;</Kw>, '\n',
-  <Kw kw="keyword" key="l2a">const</Kw>, ' ', <Kw kw="name" key="l2b">THEME</Kw>, ' ', <Kw kw="punct" key="l2c">=</Kw>, ' ', <Kw kw="string" key="l2d">'V72'</Kw>, <Kw kw="punct" key="l2e">;</Kw>, '\n',
+  <Kw kw="keyword" key="l2a">const</Kw>, ' ', <Kw kw="name" key="l2b">THEME</Kw>, ' ', <Kw kw="punct" key="l2c">=</Kw>, ' ', <Kw kw="string" key="l2d">'V73'</Kw>, <Kw kw="punct" key="l2e">;</Kw>, '\n',
   <Kw kw="keyword" key="l3a">export</Kw>, ' ', <Kw kw="keyword" key="l3b">const</Kw>, ' ', <Kw kw="name" key="l3c">config</Kw>, ' ', <Kw kw="punct" key="l3d">=</Kw>, ' ', <Kw kw="punct" key="l3e">{'{'}</Kw>, '\n',
   '  ', <Kw kw="name" key="l4a">primary</Kw>, <Kw kw="punct" key="l4b">:</Kw>, ' ', <Kw kw="string" key="l4c">'#E89975'</Kw>, <Kw kw="punct" key="l4d">,</Kw>, '\n',
   '  ', <Kw kw="name" key="l5a">darkMode</Kw>, <Kw kw="punct" key="l5b">:</Kw>, ' ', <Kw kw="literal" key="l5c">true</Kw>, <Kw kw="punct" key="l5d">,</Kw>, '\n',

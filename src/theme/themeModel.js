@@ -305,9 +305,9 @@ export function buildPresetCss(p, target = CHERRY_V1_TARGET) {
   const lt = fieldsOf(buildVars(presetPlan(p, 'light'), glow))
   const theme = themeFromFields(dk, lt)
   if (target === CHERRY_V2_TARGET) {
-    return buildV2Css(dk, lt, { name: 'Theme Station V72', radius: Number(theme.tableBorderRadius) || 12 })
+    return buildV2Css(dk, lt, { name: 'Theme Station V73', radius: Number(theme.tableBorderRadius) || 12 })
   }
-  let css = buildExportCss(theme, { name: 'Theme Station V72' })
+  let css = buildExportCss(theme, { name: 'Theme Station V73' })
 
   const rowD = dk.tableRow, rowHD = dk.soft
   const rowL = lt.tableRow, rowHL = lt.soft
