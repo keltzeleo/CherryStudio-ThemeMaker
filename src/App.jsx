@@ -334,6 +334,12 @@ function App() {
       setVar('--local-thinking-border', thinkingOf(hex, curDark).border)
       setVar('--local-thinking-text', thinkingOf(hex, curDark).text)
     }
+    // User bubble bg is documented (ThemeStation-UX-Design-Doc.md) as a low-alpha
+    // derivation of accent — keep it tracking live accent edits the same way.
+    const userAlpha = curDark ? 0.08 : 0.045
+    if (cssVar('--chat-background-user') === rgbaWithAlpha(prevAccent, userAlpha)) {
+      setVar('--chat-background-user', rgbaWithAlpha(hex, userAlpha))
+    }
     const scheme = presetsRef.current.find(x => x.name === selNameRef.current)?.scheme
     const prevHarm = harmonySurface(prevAccent, curDark ? 'dark' : 'light', scheme)
     const newHarm = harmonySurface(hex, curDark ? 'dark' : 'light', scheme)
@@ -1031,12 +1037,7 @@ function App() {
         </main>
       </div>
 
-      <button className="accent-ball pz" data-zone="accent" title="主色 Accent · 点我改主色">
-        <span className="accent-ball-inner">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" /></svg>
-          <span className="accent-ball-label">ACCENT</span>
-        </span>
-      </button>
+      <button className="accent-ball pz" data-zone="accent" title="主色 Accent · 点我改主色" aria-label="主色 Accent" />
 
       <div className="accent-contrast" title="主色 vs 背景的 WCAG 对比度">
         <span className={'ac-ratio ac-' + accentContrast.tier}>{accentContrast.ratio}</span>

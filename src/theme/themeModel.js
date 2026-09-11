@@ -69,7 +69,7 @@ export function buildVars(plan, glow) {
     '--color-primary-mute': rgbaWithAlpha(s.accent, 0.3),
     '--color-link': s.link,
     '--chat-background-ai': s.ai || (dk ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.03)'),
-    '--chat-background-user': s.user,
+    '--chat-background-user': s.user || rgbaWithAlpha(s.accent, dk ? 0.08 : 0.045),
     '--chat-text-user': s.userText,
     '--color-code-background': s.codeBg || s.mute,
     '--color-inline-code-bg': s.inlineCodeBg || s.mute,

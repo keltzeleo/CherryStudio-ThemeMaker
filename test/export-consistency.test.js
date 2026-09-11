@@ -73,11 +73,15 @@ test('buildVars 永不产出 undefined / 空串 / null', () => {
 })
 
 test('round-trip：预览变量在 varsToPlan/buildVars 间无损', () => {
+  // user 不在这份清单里：它现在跟 thinking/active/table 一样是「没设就跟 accent
+  // 走默认公式」的字段（ThemeStation-UX-Design-Doc.md「User bubble bg = accent
+  // 的低 alpha 派生」），未设置时 buildVars 算出的具体值本就不等于源数据里的
+  // undefined，往返不再是恒等。
   for (const p of PRESETS) {
     for (const mode of ['dark', 'light']) {
       const vars = buildVars(presetPlan(p, mode), p.glow)
       const back = varsToPlan(vars)
-      for (const k of ['bg', 'soft', 'mute', 'accent', 'link', 'ai', 'user', 'userText']) {
+      for (const k of ['bg', 'soft', 'mute', 'accent', 'link', 'ai', 'userText']) {
         assert.equal(back[k], presetPlan(p, mode)[k], `${p.name}/${mode}.${k}`)
       }
     }
@@ -94,6 +98,20 @@ test('思考框文字/底/边默认来自 accent 的色调化派生（莫兰迪�
   // 与 accent 保持同色相、但更灰淡 —— 不相等（不是纯 accent）
   assert.notEqual(vars['--local-thinking-text'], '#E89975')
   assert.notEqual(vars['--local-thinking-bg'], plan.bg)
+})
+
+test('User bubble bg 默认是 accent 的低 alpha 派生（ThemeStation-UX-Design-Doc.md 族2 规则），未设置 user 才生效', () => {
+  const dk = buildVars({ bg: '#2b2b2b', accent: '#E89975' }, undefined)
+  const lt = buildVars({ bg: '#faf8f6', accent: '#E89975' }, undefined)
+  assert.equal(dk['--chat-background-user'], rgbaWithAlpha('#E89975', 0.08))
+  assert.equal(lt['--chat-background-user'], rgbaWithAlpha('#E89975', 0.045))
+  // 显式设置 user 时优先于默认公式（自建 preset 手动调过的不能被盖掉）。
+  const custom = buildVars({ bg: '#2b2b2b', accent: '#E89975', user: 'rgba(1,2,3,.5)' }, undefined)
+  assert.equal(custom['--chat-background-user'], 'rgba(1,2,3,.5)')
+  // Kel Meow 本身不再手动设 user，验证它确实吃到这条默认公式。
+  const km = PRESETS.find(p => p.name === 'Kel Meow')
+  assert.equal(km.dark.user, undefined)
+  assert.equal(buildVars(presetPlan(km, 'dark'), km.glow)['--chat-background-user'], rgbaWithAlpha(km.dark.accent, 0.08))
 })
 
 test('统一修改：accent 在 dark/light 两模式保持同色', () => {

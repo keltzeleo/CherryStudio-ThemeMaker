@@ -387,8 +387,6 @@ table tbody tr:hover{background:var(--color-background-soft)}
   transition:transform .18s ease,box-shadow .18s ease;
 }
 .accent-ball:hover{transform:scale(1.07);box-shadow:0 18px 38px -12px rgba(0,0,0,.6), inset 0 0 0 3px rgba(255,255,255,.22)}
-.accent-ball-inner{display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none}
-.accent-ball svg{width:24px;height:24px;stroke:currentColor;stroke-width:1.6;fill:none}
 /* Accent 球下方：WCAG 对比度徽标 */
 .accent-contrast{position:fixed;right:22px;top:124px;z-index:24;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
 .accent-contrast .ac-ratio{font:700 11px/1 system-ui;padding:4px 7px;border-radius:20px;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.18);box-shadow:0 8px 18px -8px rgba(0,0,0,.5)}
@@ -617,5 +615,3 @@ body.has-draft .preset:not(#draftcard){opacity:.45;filter:saturate(.7);transitio
 .sync-help:hover .sync-help-tip,.sync-help:focus-visible .sync-help-tip{opacity:1;visibility:visible}
 
 .brand-theme{font-weight:400;color:var(--color-text-3);font-size:11px;margin-left:2px}
-
-.accent-ball-label{font-size:8px;font-weight:700;letter-spacing:.04em;color:#2b2b2b;pointer-events:none}
