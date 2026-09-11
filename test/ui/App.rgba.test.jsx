@@ -101,4 +101,20 @@ describe('popover 色值行的 R/G/B/alpha 数值输入', () => {
     expect(bIn.value).toBe(String(b))
     expect(Number(aIn.value)).toBe(1)
   })
+
+  it('改 accent（透过数值框）在"統一修改"开启时，另一模式的 user bubble 也跟着走', () => {
+    render(<App />)
+    fireEvent.click(document.querySelector('[data-zone="accent"]'), { clientX: 300, clientY: 200 })
+
+    const row = rowByLabel('主色 Accent')
+    const [rIn] = rgbaInputs(row)
+    fireEvent.change(rIn, { target: { value: '60' } })
+
+    fireEvent.click(document.querySelector('button[title="Light"]'))
+
+    const lightUser = document.documentElement.style.getPropertyValue('--chat-background-user')
+    const { r, a } = parseColor(lightUser)
+    expect(r).toBe(60)
+    expect(a).toBeCloseTo(0.045, 3)
+  })
 })

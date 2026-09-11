@@ -43,9 +43,9 @@ export const PRESETS = [
       tableHeader:'#bcb7bd', tableRowBg:'rgba(225,234,249,0)', thinking:'#f4f6f4', thinkingText:'#566c67',
       reference:'#a28781', referenceText:'#5a473a', referenceBg:'#eadfdc' } },
   { name:'tangerine chachor', cert:'自建', own:true, scheme:'analogous', glow:['#E89975','#B48CA8','#7997C2','#D4A867','#8DB578'],
-    dark:{ bg:'#2b2b2b', soft:'#303030', mute:'#333333', accent:'#E89975', link:'#338cff', ai:'rgba(255,255,255,.05)', userText:'#F0F0F0',
+    dark:{ bg:'#2b2b2b', soft:'#303030', mute:'#333333', accent:'#a97979', link:'#338cff', ai:'rgba(255,255,255,.05)', userText:'#F0F0F0',
       reference:'#cc8a52', referenceText:'#e6d2bb', referenceBg:'#3d2e22' },
-    light:{ bg:'#faf8f6', soft:'#f4f4f4', mute:'#eeeeee', accent:'#E89975', link:'#1677ff', ai:'rgba(0,0,0,.03)', userText:'#1b1b1f',
+    light:{ bg:'#faf8f6', soft:'#f4f4f4', mute:'#eeeeee', accent:'#a97979', link:'#1677ff', ai:'rgba(0,0,0,.03)', userText:'#1b1b1f',
       reference:'#c17d47', referenceText:'#6b4a2e', referenceBg:'#f8ecdd' } },
 ]
 

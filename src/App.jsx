@@ -217,6 +217,7 @@ function App() {
       tgt['--color-active'] = rgbaWithAlpha(newAccent, other === 'dark' ? 0.12 : 0.08)
       tgt['--color-primary-mute'] = rgbaWithAlpha(newAccent, 0.3)
       tgt['--color-primary-soft'] = rgbaWithAlpha(newAccent, 0.6)
+      tgt['--chat-background-user'] = rgbaWithAlpha(newAccent, other === 'dark' ? 0.08 : 0.045)
     }
     syncSnapState()
   }
