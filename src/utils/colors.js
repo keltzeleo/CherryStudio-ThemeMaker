@@ -61,13 +61,14 @@ export function textTiers(bg) {
   // 会与 resolver 从 --color-text-1 派生的官方 --color-text-2/-3 出现 RGB 偏差。
   return isDark(bg)
     ? { t1: 'rgba(255,255,245,0.9)', t2: 'rgba(255,255,245,0.6)', t3: 'rgba(255,255,245,0.38)' }
-    : { t1: '#1b1b1f', t2: 'rgba(27,27,31,0.6)', t3: 'rgba(27,27,31,0.38)' }
+    : { t1: '#222222', t2: 'rgba(34,34,34,0.6)', t3: 'rgba(34,34,34,0.38)' }
 }
 
 // 思考框三色的「色调化」派生：底色与文字都是 accent 的降饱和同色相回声，
 // 而非生硬的直接刷 accent —— 思考框成为整体配色的低沉点缀，而不是夺目的色块。
 // dark：底色朝该色相的暗灰、文字向更灰淡（降饱和提亮）的版本；
-// light：底色淡淡的米色系暖白、文字向更暗灰的版本。
+// light：底色几乎融进页面底色、边框和文字都克制——阅读上它更接近代码里的
+// 注释（弱化、跳读），而不是一个要抢注意力的高对比卡片（2026-09-12 收敛）。
 export function thinkingOf(accent, dark) {
   const { h, s } = legacyHsl(accent)
   return dark
@@ -77,9 +78,9 @@ export function thinkingOf(accent, dark) {
         text: legacyHslToHex(h, Math.min(s, 24), 66),
       }
     : {
-        bg: legacyHslToHex(h, Math.min(s, 12), 96),
-        border: legacyHslToHex(h, Math.min(s, 16), 89),
-        text: legacyHslToHex(h, Math.min(s, 24), 36),
+        bg: legacyHslToHex(h, Math.min(s, 8), 91),
+        border: legacyHslToHex(h, Math.min(s, 10), 87),
+        text: legacyHslToHex(h, Math.min(s, 18), 50),
       }
 }
 
@@ -91,14 +92,20 @@ export function thinkingOf(accent, dark) {
 // 各预设的和声方案：四张「结构面」分别做不同色相旋转，而非一律四元（+60/+120/+180/+240）。
 // 每个方案给出一组 [表头, 引用, 思考, 代码参数] 的色相增量，并保证这四处彼此可区分、
 // 又都落在莫兰迪（低饱和）灰调带里。所有值同时用于预览与导出，保证「所见==所得」。
+// 2026-09-12 收窄：原先 60–270° 的大跨度旋转，在莫兰迪的低饱和区间不会读成
+// 「同一色轮上的呼应色」，只会读成「一块不相关的杂色」——尤其表头，经常比页面
+// 背景本身跳出去一整个色系（比如蓝色页面配出一块粉红表头）。改成同一色相带内
+// 的小跨度旋转（≤60°），四个结构面仍然彼此可区分，但都还在 accent 的"家族"里，
+// 不会看起来像放错了主题。相对跨度关系保留（tetradic 仍比 analogous 跳得开），
+// 只是整体压缩到不再制造色相断层的范围。
 const SCHEMES = {
-  tetradic:      [60, 120, 180, 240],   // 经典四元（默认）
-  analogous:     [20, 45, 70, 95],      // 邻近——同一色相带缓慢爬升，最温和
+  tetradic:      [15, 30, 45, 60],      // 经典四元（默认）
+  analogous:     [8, 18, 28, 38],       // 邻近——同一色相带缓慢爬升，最温和
   monochrome:    [0, 0, 0, 0],          // 同色相——只靠明度/饱和区分，最克制
-  complementary: [180, 240, 120, 60],   // 主面取互补的两极
-  triadic:       [120, 240, 60, 180],   // 三足鼎立的两组交错
-  splitComp:     [30, 150, 210, 90],    // 分裂互补——一对补色 + 两个邻色
-  square:        [90, 180, 270, 0],     // 方阵四等分
+  complementary: [45, 60, 30, 15],      // 主面取互补方向里最克制的一段
+  triadic:       [30, 60, 15, 45],      // 三足鼎立的两组交错
+  splitComp:     [8, 38, 53, 23],       // 分裂互补——一对补色方向 + 两个邻色
+  square:        [23, 45, 68, 0],       // 方阵四等分
 }
 
 // 把某个面在暗/亮两模式下译为具体的莫兰迪色（饱和度 ≤26，引用竖线用 20 稍作强调）。
@@ -148,7 +155,7 @@ export function linkHoverOf(hex, dark) {
 // toMode: 'dark' | 'light'
 const TEXT_TIERS = {
   dark: { t1: 'rgba(255,255,245,0.9)', t2: 'rgba(255,255,245,0.6)', t3: 'rgba(255,255,245,0.38)' },
-  light: { t1: '#1b1b1f', t2: 'rgba(27,27,31,0.6)', t3: 'rgba(27,27,31,0.38)' },
+  light: { t1: '#222222', t2: 'rgba(34,34,34,0.6)', t3: 'rgba(34,34,34,0.38)' },
 }
 function textTierOf(color) {
   const m = /rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+))?\)/.exec(color || '')
