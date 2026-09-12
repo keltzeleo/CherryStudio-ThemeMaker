@@ -105,7 +105,7 @@ const SCHEMES = {
 function face(band, H, dark) {
   const at = (dH, s, l) => legacyHslToHex((H + dH) % 360, s, l)
   switch (band) {
-    case 'table':        return dark ? at(0, 16, 26) : at(0, 18, 93)
+    case 'table':        return dark ? at(0, 16, 26) : at(0, 20, 82)
     case 'tableText':    return dark ? at(0, 16, 82) : at(0, 18, 34)
     case 'quoteBg':      return dark ? at(0, 14, 19) : at(0, 14, 95)
     case 'quoteLine':    return dark ? at(0, 20, 48) : at(0, 20, 42)
