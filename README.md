@@ -116,21 +116,29 @@ The v2 exporter writes **light as `:root:root` and dark as `:root.dark`** — bo
 | `Oatmilk` | `#bdaf89` | tetradic · 四元 |
 | `Duskstone` | `#675d79` | monochrome · 同色相 |
 | `Sagemist` | `#6b857e` | splitComp · 分裂互补 |
-| `Fernleaf` | `#8db578` | triadic · 三足 |
-| `Skyglass` | `#6fb5d4` | complementary · 互补 |
+| `Fernleaf` | `#22a037` | triadic · 三足 |
+| `Skyglass` | `#2c3287` | complementary · 互补 |
 
 ### Custom · 自建预设
 
 | Preset | Accent · 主色 | Harmony scheme · 和声方案 |
 | --- | --- | --- |
-| `honeyPaw` | `#c3ad79` | complementary · 互补 |
+| `honeyPaw` | `#cc9a0f` | complementary · 互补 |
 | `steelMist` | `#7691b2` | triadic · 三足 |
 | `willowMint` | `#86aa6e` | square · 方阵 |
 | `berryMeow` | `#c18694` | splitComp · 分裂互补 |
-| `violetPurr` | `#9e81b1` | analogous · 邻近 |
+| `violetPurr` | `#8b4b88` | analogous · 邻近 |
 | `sunClay` | `#ba8769` | monochrome · 同色相 |
 | `tealDrift` | `#70a99d` | triadic · 三足 |
-| `tangerine chachor` | `#a97979` | analogous · 邻近 |
+| `Red Moon` | `#a01818` | analogous · 邻近 |
+
+### Light mode, designed on its own terms · 浅色不是深色的换算题
+
+<p align="center">
+  <img src="theme-station-light-gallery.png" alt="All 14 presets shown side by side in light mode, each with its own confidently-toned sidebar" width="100%" />
+</p>
+
+<p align="center"><sub>Light mode isn't dark mode with the lightness inverted — each preset's sidebar gets its own mid-tone, confidently-colored chrome (not a pale wash), while the reading area stays genuinely light. All 14 presets, same recipe, all still unmistakably themselves. 浅色不是深色反过来算一遍：每个预设的侧栏都有自己站得住的中间调色彩，而不是一片苍白；内容区依然够亮够安静。十四个预设走的是同一套方法，但看起来各是各的样子。</sub></p>
 
 ---
 

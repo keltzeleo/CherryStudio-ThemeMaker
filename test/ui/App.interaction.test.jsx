@@ -87,6 +87,20 @@ describe('Theme Station 交互层', () => {
     expect(strip.classList.contains('dragging')).toBe(false)
   })
 
+  it('popover 标题栏三横杆也能拖动（跟 dock 抓手同一套模式，保持统一）', () => {
+    render(<App />)
+    fireEvent.click(document.querySelector('[data-zone="ai"]'), { clientX: 300, clientY: 200 })
+    const popover = document.getElementById('popover')
+    const ph = popover.querySelector('.ph')
+    const startLeft = parseInt(popover.style.left)
+    pointer('pointerdown', ph, { clientX: 300, clientY: 200 })
+    expect(popover.classList.contains('dragging')).toBe(true)
+    pointer('pointermove', window, { clientX: 260, clientY: 180 })
+    expect(parseInt(popover.style.left)).toBe(startLeft - 40)
+    pointer('pointerup', window)
+    expect(popover.classList.contains('dragging')).toBe(false)
+  })
+
   it('undo/redo 在 inspector 中回退与前进一次改色', () => {
     render(<App />)
     const undo = document.getElementById('undobtn')

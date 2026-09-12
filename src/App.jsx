@@ -177,6 +177,7 @@ function App() {
   const stripRef = useRef(null)
   const dragRef = useRef(null)
   const popoverRef = useRef(null)
+  const dragPopRef = useRef(null)
   const drawerLeaveTimer = useRef(null)
   const leaveNameInputRef = useRef(null)
 
@@ -733,6 +734,39 @@ function App() {
     window.addEventListener('pointercancel', onEnd)
   }
 
+  // popover 标题栏的三横杆抓手：跟 dock 的 onStripPointerDown 同一套模式
+  // （pointerdown 记起点 → pointermove 直接改 style.left/top → pointerup 收尾）。
+  // 不经过 setPopover，所以不会触发 positionPopover 的 [popover] effect 把位置
+  // 弹回去；换 zone 重新 openPopover 时 effect 才会用新坐标重新定位，符合预期。
+  const onPopoverHeaderPointerDown = e => {
+    const box = popoverRef.current
+    if (!box) return
+    dragPopRef.current = {
+      startX: e.clientX, startY: e.clientY,
+      startLeft: parseInt(box.style.left) || 0, startTop: parseInt(box.style.top) || 0,
+    }
+    box.classList.add('dragging')
+    e.preventDefault()
+    const onMove = ev => {
+      const d = dragPopRef.current
+      if (!d) return
+      const maxLeft = window.innerWidth - box.offsetWidth - 12
+      const maxTop = window.innerHeight - box.offsetHeight - 12
+      box.style.left = Math.max(12, Math.min(maxLeft, d.startLeft + (ev.clientX - d.startX))) + 'px'
+      box.style.top = Math.max(12, Math.min(maxTop, d.startTop + (ev.clientY - d.startY))) + 'px'
+    }
+    const onEnd = () => {
+      dragPopRef.current = null
+      box.classList.remove('dragging')
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onEnd)
+      window.removeEventListener('pointercancel', onEnd)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onEnd)
+    window.addEventListener('pointercancel', onEnd)
+  }
+
   useEffect(() => {
     document.documentElement.setAttribute('data-mode', 'dark')
     document.body.classList.add('pick')
@@ -1122,7 +1156,7 @@ function App() {
 
       {popoverZone && (
         <div ref={popoverRef} className={'popover show' + (draft ? ' draft' : '')} id="popover">
-          <div className="ph">
+          <div className="ph" onPointerDown={onPopoverHeaderPointerDown} title="拖动此弹窗">
             <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
             <span className="t">{popoverZone.note}</span><span className="gid">{popoverParts.length} 项</span>
           </div>

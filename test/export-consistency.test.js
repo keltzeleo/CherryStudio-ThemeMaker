@@ -361,16 +361,18 @@ test('导航栏分离：--navbar-background 跟随 --sidebar，mac 变体是它�
   }
 })
 
-test('输入栏背景跟随预览 soft、边框跟随预览 border（输入框所见 == 所得）', () => {
+test('输入栏背景跟随预览 inputBg（默认即 soft，可被单独覆盖）、边框跟随预览 border（输入框所见 == 所得）', () => {
   for (const p of PRESETS) {
     const css = buildPresetCss(p)
     for (const mode of ['dark', 'light']) {
       const src = buildVars(presetPlan(p, mode), p.glow)
       const block = mode === 'dark' ? { ...layer1(css, 'dark'), ...layer2(css, 'dark') }
         : { ...layer1(css, 'light'), ...layer2(css, 'light') }
-      // 输入框底 == 预览 --color-background-soft（字节一致）
-      assert.equal(normColor(block['--local-input-bg']), normColor(src['--color-background-soft']),
-        `${p.name}/${mode} 输入框底应等于 soft`)
+      // 输入框底 == 预览 --local-input-bg（默认落到 soft，但预设可以单独覆盖
+      // inputBg 让输入框不跟着「侧边栏用的更深/更饱和的 soft」一起变深——
+      // 字节一致比较的是「导出」与「预览」，不是死等于 soft）
+      assert.equal(normColor(block['--local-input-bg']), normColor(src['--local-input-bg']),
+        `${p.name}/${mode} 输入框底应等于预览 --local-input-bg`)
       // 输入框边框 == 预览 --color-border（逐字节一致）
       assert.equal(normColor(block['--local-input-border']), normColor(src['--color-border']),
         `${p.name}/${mode} 输入框边框应等于 border`)
