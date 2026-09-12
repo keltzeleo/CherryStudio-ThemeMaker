@@ -76,7 +76,7 @@ export function buildVars(plan, glow) {
     '--color-inline-code-text': s.inlineCodeText || s.kwKeyword || (dk ? '#ff7b72' : '#d73a49'),
     '--sidebar': s.sidebar || s.soft,
     '--table-header': s.tableHeader || harm.table,
-    '--table-row-bg': s.tableRowBg || (dk ? 'rgba(255,255,255,.02)' : 'rgba(0,0,0,.02)'),
+    '--table-row-bg': s.tableRowBg || (dk ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.045)'),
     '--local-thinking-bg': s.thinking || thinkingOf(s.accent, dk).bg,
     '--local-thinking-border': s.thinkingBorder || thinkingOf(s.accent, dk).border,
     '--local-thinking-text': s.thinkingText || thinkingOf(s.accent, dk).text,
