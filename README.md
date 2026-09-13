@@ -18,7 +18,7 @@ What you see is **exactly** what gets exported, for **both** Cherry Studio
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff.svg)](https://vite.dev)
-[![Tests](https://img.shields.io/badge/tests-69%2F69%20passing-brightgreen.svg)](#-tests--测试)
+[![Tests](https://img.shields.io/badge/tests-70%2F70%20passing-brightgreen.svg)](#-tests--测试)
 [![Presets](https://img.shields.io/badge/presets-14%20ready--made-orange.svg)](#-presets--预设)
 
 </div>
@@ -129,8 +129,16 @@ The v2 exporter writes **light as `:root:root` and dark as `:root.dark`** — bo
 | `berryMeow` | `#c18694` | splitComp · 分裂互补 |
 | `violetPurr` | `#8b4b88` | analogous · 邻近 |
 | `sunClay` | `#ba8769` | monochrome · 同色相 |
-| `tealDrift` | `#70a99d` | triadic · 三足 |
+| `Kiwi On Fire` | `#7f8b55` | triadic · 三足 |
 | `Red Moon` | `#a01818` | analogous · 邻近 |
+
+### All 14, in both modes · 十四色，深浅两套
+
+<p align="center">
+  <img src="theme-station-dark-gallery.png" alt="All 14 presets shown side by side in dark mode" width="100%" />
+</p>
+
+<p align="center"><sub>Dark mode, side by side — fourteen distinct accent identities, none of them fighting for the same hue. 深色模式一次看全，十四个 accent 各有各的位置，不会撞色。</sub></p>
 
 ### Light mode, designed on its own terms · 浅色不是深色的换算题
 
@@ -176,10 +184,10 @@ npm run dev
 
 ## ✅ Tests · 测试
 
-**69/69 passing** — every edit is regression-checked.
+**70/70 passing** — every edit is regression-checked.
 
 - `test/export-consistency.test.js` + `test/export-v2.test.js` · **49 tests** — locks the invariant that exported CSS values match the preview variables exactly (the Morandi-desaturated harmony surfaces for thinking box / table header / reference / code-name, the accent-tinted assistant/user bubble chips, and the v2.0.9 four-layer `--cs-*`/bare-shadcn surface with boosted specificity).
-- `test/ui/*.test.jsx` · **20 tests** — interaction (click-to-edit, undo/redo, draft fork, export-target switching), alpha-channel consistency, and the R/G/B/alpha numeric color inputs.
+- `test/ui/*.test.jsx` · **21 tests** — interaction (click-to-edit, undo/redo, draft fork, export-target switching, popover drag parity with the dock), alpha-channel consistency, and the R/G/B/alpha numeric color inputs.
 
 ---
 
