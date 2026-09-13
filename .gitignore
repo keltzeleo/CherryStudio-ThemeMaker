@@ -21,3 +21,6 @@ npm-debug.log*
 # unrelated stray project dropped inside the workspace (own git repo) — pollutes
 # recursive `node --test` and `eslint .` (imports an uninstalled eslint-config-next)
 agent-browser/
+
+# personal full-screen reference screenshots, not build assets
+reference-screenshots/
