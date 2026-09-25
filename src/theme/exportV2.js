@@ -477,15 +477,29 @@ ${railGlowCss}
   background-color: var(--sidebar) !important;
 }
 
-/* Thinking box (ThinkingBlock.tsx) — VERIFIED against real source: the
- * expanded content div under [data-ui="part:message-reasoning"] uses
- * Tailwind bg-muted plus an inline color: var(--muted-foreground) — both
- * generic, not our accent-tinted thinkingOf() design. Re-route to our own
- * dedicated tokens; the stylesheet !important also wins over the element's
- * inline color style (author !important outranks inline normal styles). */
-[data-ui="part:message-reasoning"] .bg-muted {
+/* Thinking box (ThinkingBlock.tsx) — VERIFIED against real source AND a real
+ * user-supplied DOM dump of the currently-installed build: the ancestor no
+ * longer carries data-ui="part:message-reasoning" alone — it's now a
+ * space-separated pair, data-ui="chat.thinking-block.message-reasoning
+ * part:message-reasoning". An exact-match attribute selector ([data-ui="..."])
+ * requires the WHOLE attribute value to match, so it silently stopped
+ * selecting anything on this build; [data-ui~="..."] matches one token in a
+ * whitespace-separated list instead, which is what's actually needed here.
+ * The expanded content div itself carries Tailwind bg-muted plus an inline
+ * color: var(--muted-foreground) (generic, not our accent-tinted
+ * thinkingOf() design) — our stylesheet !important wins over that inline
+ * normal-priority style. But the real DOM also has a NESTED
+ * [data-ui="chat.thinking-block"] div one level in, which sets its own
+ * inline color (a foreground/opacity mix) on itself — that inline value
+ * inherits down to the thinking text and isn't touched by overriding the
+ * outer .bg-muted's color, since inheritance only kicks in where a
+ * descendant doesn't set the property itself. Target it directly too. */
+[data-ui~="part:message-reasoning"] .bg-muted {
   background-color: var(--thinking-bg) !important;
   border: 1px solid var(--thinking-border) !important;
+  color: var(--thinking-text) !important;
+}
+[data-ui~="part:message-reasoning"] [data-ui="chat.thinking-block"] {
   color: var(--thinking-text) !important;
 }
 
