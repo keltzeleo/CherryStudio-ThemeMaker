@@ -152,7 +152,7 @@ The v2 exporter writes **light as `:root:root` and dark as `:root.dark`** — bo
 
 ## 🚀 Getting started · 快速开始
 
-Requires Node **20.12+** (`engines`); the test suite is verified on Node **22 LTS**.
+Requires Node **22.22.2 or newer within Node 22.x** (`engines`; `.nvmrc` selects Node 22).
 
 ```bash
 # 1. Install dependencies
