@@ -295,7 +295,7 @@ function App() {
     // (pure JS metadata, not a var) — reattach it from the active preset so
     // the other-mode swatch preview doesn't fall back to tetradic when no
     // snapshot is cached yet.
-    const scheme = presetsRef.current.find(x => x.name === selNameRef.current)?.scheme
+    const scheme = presets.find(x => x.name === selName)?.scheme
     const otherPlan = { ...varsToPlan(curVars), scheme }
     const darkVars = mode === 'dark' ? curVars : (snaps.dark || buildVars(otherPlan, DEFAULT_GLOW))
     const lightVars = mode === 'light' ? curVars : (snaps.light || buildVars(otherPlan, DEFAULT_GLOW))
